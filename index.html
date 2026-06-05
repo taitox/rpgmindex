@@ -53,6 +53,23 @@
   </div>
 </div>
 
+<!-- TAGS & VERSIONS MANAGER -->
+<div id="tv-manager" style="display:none">
+  <div class="tv-inner">
+    <div class="tv-group">
+      <span class="tv-group-label">Tags</span>
+      <div id="tv-tag-list"></div>
+      <button class="tv-new-btn" onclick="openTagEdit(null)" title="New Tag">＋</button>
+    </div>
+    <div class="tv-divider"></div>
+    <div class="tv-group">
+      <span class="tv-group-label">Versions</span>
+      <div id="tv-ver-list"></div>
+      <button class="tv-new-btn" onclick="openVersionEdit(null)" title="New Version">＋</button>
+    </div>
+  </div>
+</div>
+  
 <!-- MAIN -->
 <main id="main-view">
 
@@ -248,6 +265,60 @@
     <div class="modal-actions">
       <button class="button-secondary"  onclick="closeModal('contact-modal')" id="contact-cancel">Cancelar</button>
       <button class="button-primary" onclick="sendContact()"               id="contact-send">Enviar</button>
+    </div>
+  </div>
+</div>
+
+  <!-- TAG MODAL -->
+<div class="modal-overlay" id="tag-modal">
+  <div class="modal-content">
+    <div class="modal-title" id="tag-modal-title">Tag</div>
+    <input type="hidden" id="tag-edit-orig-name"/>
+    <div class="field">
+      <label>Name</label>
+      <input id="tag-edit-name" type="text" placeholder="e.g. Horror"/>
+    </div>
+    <div class="field">
+      <label>Colors <small style="font-weight:400;text-transform:none">(leave blank for defaults)</small></label>
+      <div class="tv-color-row">
+        <div class="tv-color-field"><span>BG</span><input id="tag-edit-bg" type="text" placeholder="#rrggbb"/></div>
+        <div class="tv-color-field"><span>TX</span><input id="tag-edit-tx" type="text" placeholder="#rrggbb"/></div>
+        <div class="tv-color-field"><span>BD</span><input id="tag-edit-bd" type="text" placeholder="#rrggbb"/></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="button-secondary" onclick="closeModal('tag-modal')">Cancel</button>
+      <button class="button-primary"   onclick="saveTag()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- VERSION MODAL -->
+<div class="modal-overlay" id="ver-modal">
+  <div class="modal-content">
+    <div class="modal-title" id="ver-modal-title">Version</div>
+    <input type="hidden" id="ver-edit-orig-id"/>
+    <div class="field-row">
+      <div class="field">
+        <label>ID <small style="font-weight:400;text-transform:none">(short, no spaces)</small></label>
+        <input id="ver-edit-id" type="text" placeholder="e.g. rmxp"/>
+      </div>
+      <div class="field">
+        <label>Label</label>
+        <input id="ver-edit-label" type="text" placeholder="e.g. RMXP"/>
+      </div>
+    </div>
+    <div class="field">
+      <label>Colors <small style="font-weight:400;text-transform:none">(leave blank for defaults)</small></label>
+      <div class="tv-color-row">
+        <div class="tv-color-field"><span>BG</span><input id="ver-edit-bg" type="text" placeholder="#rrggbb"/></div>
+        <div class="tv-color-field"><span>TX</span><input id="ver-edit-tx" type="text" placeholder="#rrggbb"/></div>
+        <div class="tv-color-field"><span>BD</span><input id="ver-edit-bd" type="text" placeholder="#rrggbb"/></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="button-secondary" onclick="closeModal('ver-modal')">Cancel</button>
+      <button class="button-primary"   onclick="saveVersion()">Save</button>
     </div>
   </div>
 </div>
