@@ -165,6 +165,7 @@ function updateAdminBar() {
   if (S.isAdmin && S.session) {
     setText('admin-email-label', S.session.user.email);
   }
+  renderTVManager();
 }
 
 function renderTableHeaders() {
