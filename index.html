@@ -63,10 +63,7 @@
         <span class="search-icon">🔍</span>
         <input class="search-input" id="search" type="search" placeholder="Buscar título, dev, tags…" oninput="onSearch(this.value)">
       </div>
-      <select class="version-select" id="version-select" onchange="onVersionChange(this.value)">
-        <option value="" id="version-all-option">Todas as versões</option>
-      </select>
-      <button class="button-base" id="free-button" onclick="toggleFreeOnly()">Apenas grátis</button>
+      <button class="button-base" id="advanced-search-button" onclick="toggleAdvancedSearch()">Busca Avançada</button>
     </div>
     <div class="control-right">
       <div class="columns-wrapper">
@@ -80,16 +77,70 @@
     </div>
   </div>
 
-  <!-- FILTER BAR -->
-  <div class="filter-bar" id="filter-bar">
-    <span class="filter-label" id="filter-label-text">Filtros</span>
-    <div class="filter-tokens" id="filter-tokens"></div>
-    <div class="filter-right">
-      <div class="mode-toggle" id="mode-toggle">
-        <button class="on" id="mode-or"  onclick="setTagMode('or')">OR</button>
-        <button          id="mode-and" onclick="setTagMode('and')">AND</button>
+  <!-- ADVANCED SEARCH PANEL -->
+  <div class="advanced-panel" id="advanced-panel">
+    <div class="advanced-panel-header">
+      <span class="advanced-panel-title" id="adv-panel-title">Busca Avançada</span>
+      <button class="advanced-panel-close" onclick="tryCloseAdvanced()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="advanced-panel-body">
+
+      <!-- Version multi-select -->
+      <div class="adv-control">
+        <label class="adv-control-label" id="adv-ver-label">Versão</label>
+        <div class="ms-wrapper" id="ms-version">
+          <button class="ms-trigger" onclick="toggleDropdown('version')">
+            <span id="ms-version-label">Todas as versões</span>
+            <span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-dropdown" id="ms-version-dropdown"></div>
+        </div>
       </div>
-      <button class="clear-button" id="clear-button" onclick="clearFilters()">Limpar tudo</button>
+
+      <!-- Country multi-select -->
+      <div class="adv-control">
+        <label class="adv-control-label" id="adv-ctr-label">País</label>
+        <div class="ms-wrapper" id="ms-country">
+          <button class="ms-trigger" onclick="toggleDropdown('country')">
+            <span id="ms-country-label">Todos os países</span>
+            <span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-dropdown" id="ms-country-dropdown"></div>
+        </div>
+      </div>
+
+      <!-- Free standalone toggle -->
+      <div class="adv-control">
+        <label class="adv-control-label" id="adv-free-label">Free</label>
+        <button class="button-base" id="adv-free-button" onclick="toggleFreeOnly()">Apenas grátis</button>
+      </div>
+
+      <!-- Tags multi-select + AND/OR -->
+      <div class="adv-control adv-control-tags">
+        <label class="adv-control-label" id="adv-tags-label">Tags</label>
+        <div class="adv-tags-row">
+          <div class="ms-wrapper" id="ms-tags">
+            <button class="ms-trigger" onclick="toggleDropdown('tags')">
+              <span id="ms-tags-label">Todas as tags</span>
+              <span class="ms-arrow">▾</span>
+            </button>
+            <div class="ms-dropdown" id="ms-tags-dropdown"></div>
+          </div>
+          <div class="mode-toggle" id="adv-mode-toggle">
+            <button class="on" id="adv-mode-or"  onclick="setTagMode('or')">OR</button>
+            <button           id="adv-mode-and" onclick="setTagMode('and')">AND</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Active filter chips -->
+    <div class="advanced-chips-row" id="advanced-chips-row" style="display:none"></div>
+
+    <!-- Footer -->
+    <div class="advanced-panel-footer">
+      <button class="clear-button" id="adv-clear-btn" onclick="clearAdvancedFilters()">Limpar tudo</button>
     </div>
   </div>
 
@@ -151,10 +202,22 @@
   </div>
 </div>
 
+<!-- CONFIRM CLEAR MODAL (no outside-click close) -->
+<div class="modal-overlay no-click-close" id="confirm-clear-modal">
+  <div class="modal-content">
+    <div class="modal-title"    id="confirm-clear-title">Limpar busca?</div>
+    <div class="modal-subtitle" id="confirm-clear-sub">Limpar todos os filtros ativos?</div>
+    <div class="modal-actions">
+      <button class="button-secondary" onclick="keepAndClose()"      id="confirm-keep-btn">Manter</button>
+      <button class="button-primary"   onclick="confirmClearClose()" id="confirm-clear-btn">Limpar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADMIN LOGIN MODAL -->
 <div class="modal-overlay" id="login-modal">
   <div class="modal-content">
-    <div class="modal-title" id="login-title">Login Admin</div>
+    <div class="modal-title"    id="login-title">Login Admin</div>
     <div class="modal-subtitle" id="login-subtitle">Acesso restrito ao painel de administração</div>
     <div class="field">
       <label id="login-email-label">E-mail</label>
@@ -226,7 +289,7 @@
         </div>
         <div class="download-option">
           <input type="radio" name="download-type" id="download-unavailable" value="na" onchange="toggleDownloadField()"/>
-          <label for="download-unavailable" id="download-label-unavailable">Indisponível</label>
+          <label for="download-unavailable" id="download-label-unavailable">Lost Media</label>
         </div>
       </div>
       <input id="edit-download-url" type="url" placeholder="https://…" style="margin-top:6px"/>
@@ -234,7 +297,19 @@
 
     <div class="field">
       <div class="field-label" id="edit-label-tags">Tags</div>
-      <div class="checkbox-group" id="edit-tags-checkboxes"></div>
+      <div class="edit-tag-ms" id="edit-tag-ms">
+        <div class="edit-tag-input-row">
+          <input type="text" id="edit-tag-input"
+                 placeholder="Selecionar ou adicionar tag…"
+                 oninput="onEditTagInput(this.value)"
+                 onkeydown="onEditTagKeydown(event)"
+                 onfocus="renderEditTagDropdown(_editTagFilter)"
+                 autocomplete="off"/>
+          <span class="ms-arrow" onclick="toggleEditTagDropdown()" style="cursor:pointer;padding:0 4px">▾</span>
+        </div>
+        <div class="ms-dropdown" id="edit-tag-dropdown"></div>
+        <div class="edit-tag-chips" id="edit-tag-chips"></div>
+      </div>
       <div class="login-error" id="edit-tag-error" style="display:none;text-align:left">Selecione pelo menos uma tag.</div>
     </div>
 
@@ -248,7 +323,7 @@
 <!-- CONTACT MODAL -->
 <div class="modal-overlay" id="contact-modal">
   <div class="modal-content">
-    <div class="modal-title" id="contact-title">Contato</div>
+    <div class="modal-title"    id="contact-title">Contato</div>
     <div class="modal-subtitle" id="contact-subtitle">Envie uma mensagem para a equipe do RPGMINDEX.</div>
     <div class="field">
       <label id="contact-name-label">Nome</label>

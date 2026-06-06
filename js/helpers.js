@@ -19,7 +19,7 @@ function downloadBadge(g) {
 function versionBadge(vId) {
   const v = getVer(vId);
   if (!v) return '';
-  return `<span class="badge" style="background:${v.bg};color:${v.tx};border-color:${v.bd}">${v.label}</span>`;
+  return `<span class="badge badge-version">${v.label}</span>`;
 }
 
 function tagBadge(tagName) {
@@ -56,8 +56,9 @@ function filteredGames() {
       if (!hit) return false;
     }
 
-    if (f.version  && g.vId !== f.version)          return false;
+    if (f.versions.length > 0  && !f.versions.includes(g.vId))      return false;
     if (f.freeOnly && !g.tags.includes('Free'))      return false;
+    if (f.countries.length > 0 && !f.countries.includes(g.country)) return false;
 
     if (f.tags.length > 0) {
       const matches = f.tagMode === 'or'

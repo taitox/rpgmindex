@@ -2,19 +2,21 @@
 'use strict';
 
 let S = {
-  lang:    'pt',
-  theme:   'light',
-  view:    'compact',
-  isAdmin: false,
-  loading: true,
-  session: null,
+  lang:         'pt',
+  theme:        'light',
+  view:         'compact',
+  isAdmin:      false,
+  loading:      true,
+  session:      null,
+  advancedOpen: false,
 
   sort: { col: 'title', dir: 'asc' },
 
   filters: {
     search:   '',
-    version:  '',
+    versions:  [],
     freeOnly: false,
+    countries: [],
     tags:     [],
     tagMode:  'or',
   },

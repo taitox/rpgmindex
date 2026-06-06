@@ -6,6 +6,8 @@ const T = {
     sub:      'Catálogo de jogos feitos no RPG Maker',
     search:   'Buscar título, dev, tags…',
     allver:   'Todas as versões',
+    allcountries: 'Todos os países',
+    alltags:  'Todas as tags',
     freeonly: 'Apenas grátis',
     cols:     'Colunas',
     compact:  'Tabela',
@@ -14,10 +16,11 @@ const T = {
     clearall: 'Limpar tudo',
     found:    n => `${n} jogo${n !== 1 ? 's' : ''} encontrado${n !== 1 ? 's' : ''}`,
     loading:  'Carregando…',
+    advsearch: 'Busca Avançada',
 
     title:   'Título',      dev:     'Dev',          ver:  'Versão',
     yr:      'Ano',         country: 'País',          tags: 'Tags',
-    dl:      'Download',    unavail: '❌ Indisponível',
+    dl:      'Download',    unavail: '❌ Lost Media',
     noss:    'Sem screenshot disponível.',
 
     adminlogin: 'Login Admin',
@@ -36,11 +39,18 @@ const T = {
     edss:      'Screenshot',       edurl:     'URL de Download',
     eddl:      'Download',         edtags:    'Tags',
     edcountry: 'País de Origem',
-    avail:     'Disponível',       na:        'Indisponível',
+    avail:     'Disponível',       na:        'Lost Media',
     ssurl:     'URL',              ssupload:  'Enviar Arquivo',
     countryph: 'Digite ou selecione um país…',
+    tagph:     'Selecionar ou adicionar tag…',
+    newtag:    'Nova tag — será adicionada ao salvar',
 
     tagsrequired: 'Selecione pelo menos uma tag.',
+
+    confirmclear:    'Limpar busca?',
+    confirmclearsub: 'Limpar todos os filtros ativos?',
+    confirmkeep:     'Manter',
+    confirmclearbtn: 'Limpar',
 
     contact:      'Contate-nos',
     contacttitle: 'Contato',
@@ -55,6 +65,8 @@ const T = {
     sub:      'RPG Maker Games Index',
     search:   'Search title, dev, tags…',
     allver:   'All Versions',
+    allcountries: 'All Countries',
+    alltags:  'All Tags',
     freeonly: 'Free Only',
     cols:     'Columns',
     compact:  'Table',
@@ -63,10 +75,11 @@ const T = {
     clearall: 'Clear all',
     found:    n => `${n} game${n !== 1 ? 's' : ''} found`,
     loading:  'Loading…',
+    advsearch: 'Advanced Search',
 
     title:   'Title',       dev:     'Developer',     ver:  'Version',
     yr:      'Year',        country: 'Country',        tags: 'Tags',
-    dl:      'Download',    unavail: '❌ Unavailable',
+    dl:      'Download',    unavail: '❌ Lost Media',
     noss:    'No screenshot available.',
 
     adminlogin: 'Admin Login',
@@ -85,11 +98,18 @@ const T = {
     edss:      'Screenshot',         edurl:     'Download URL',
     eddl:      'Download',           edtags:    'Tags',
     edcountry: 'Country of Origin',
-    avail:     'Available',          na:        'Unavailable',
+    avail:     'Available',          na:        'Lost Media',
     ssurl:     'URL',                ssupload:  'Upload File',
     countryph: 'Type or select a country…',
+    tagph:     'Select or add a tag…',
+    newtag:    'New tag — will be added on save',
 
     tagsrequired: 'Select at least one tag.',
+
+    confirmclear:    'Clear search?',
+    confirmclearsub: 'Clear all active search filters?',
+    confirmkeep:     'Keep',
+    confirmclearbtn: 'Clear',
 
     contact:      'Contact us',
     contacttitle: 'Contact',

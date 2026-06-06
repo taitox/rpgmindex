@@ -87,3 +87,13 @@ async function loadData() {
 function getDevList() {
   return [...new Set(GAMES.map(g => g.developer).filter(Boolean))].sort();
 }
+
+// ── Filtered lists for advanced search dropdowns ──────────
+function getVersionsInUse() {
+  const ids = new Set(GAMES.map(g => g.vId).filter(Boolean));
+  return VERSIONS.filter(v => ids.has(v.id));
+}
+
+function getCountriesInUse() {
+  return [...new Set(GAMES.map(g => g.country).filter(Boolean))].sort();
+}

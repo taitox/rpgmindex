@@ -1,47 +1,106 @@
 /* jshint esversion: 6 */
 'use strict';
 
+// ── Search ───────────────────────────────────────────────
+
 let _searchTimer;
 function onSearch(value) {
   clearTimeout(_searchTimer);
   _searchTimer = setTimeout(() => { S.filters.search = value; renderAll(); }, 200);
 }
 
-function onVersionChange(value) {
-  S.filters.version = value;
+// ── Advanced Search Panel ────────────────────────────────
+
+let _openDropdown = null;
+
+function toggleAdvancedSearch() {
+  if (S.advancedOpen) { tryCloseAdvanced(); }
+  else { S.advancedOpen = true; renderAll(); }
+}
+
+function tryCloseAdvanced() {
+  const hasFilters = S.filters.versions.length > 0 || S.filters.countries.length > 0 ||
+                     S.filters.freeOnly || S.filters.tags.length > 0;
+  if (hasFilters) {
+    openModal('confirm-clear-modal');
+  } else {
+    S.advancedOpen = false;
+    _openDropdown  = null;
+    renderAll();
+  }
+}
+
+function confirmClearClose() {
+  clearAdvancedFilters();
+  S.advancedOpen = false;
+  _openDropdown  = null;
+  closeModal('confirm-clear-modal');
+}
+
+function keepAndClose() {
+  S.advancedOpen = false;
+  _openDropdown  = null;
+  closeModal('confirm-clear-modal');
   renderAll();
 }
+
+function toggleDropdown(name) {
+  _openDropdown = (_openDropdown === name) ? null : name;
+  renderAdvancedDropdowns();
+}
+
+// ── Filters ──────────────────────────────────────────────
 
 function toggleFreeOnly() {
   S.filters.freeOnly = !S.filters.freeOnly;
   renderAll();
 }
 
+function toggleVersion(vId) {
+  const idx = S.filters.versions.indexOf(vId);
+  if (idx >= 0) S.filters.versions.splice(idx, 1);
+  else          S.filters.versions.push(vId);
+  renderAll();
+}
+
+function toggleCountry(country) {
+  const idx = S.filters.countries.indexOf(country);
+  if (idx >= 0) S.filters.countries.splice(idx, 1);
+  else          S.filters.countries.push(country);
+  renderAll();
+}
+
 function toggleTag(tag) {
+  // Free always routes to freeOnly toggle for consistent logic
+  if (tag === 'Free') { toggleFreeOnly(); return; }
   const idx = S.filters.tags.indexOf(tag);
   if (idx >= 0) S.filters.tags.splice(idx, 1);
   else          S.filters.tags.push(tag);
   renderAll();
 }
 
-function removeTag(tag) {
-  toggleTag(tag);
-}
+function removeTag(tag) { toggleTag(tag); }
 
 function setTagMode(mode) {
   S.filters.tagMode = mode;
   renderAll();
 }
 
-function clearFilters() {
-  S.filters.search   = '';
-  S.filters.version  = '';
-  S.filters.freeOnly = false;
-  S.filters.tags     = [];
-  document.getElementById('search').value  = '';
-  document.getElementById('version-select').value = '';
+function clearAdvancedFilters() {
+  S.filters.versions  = [];
+  S.filters.countries = [];
+  S.filters.freeOnly  = false;
+  S.filters.tags      = [];
   renderAll();
 }
+
+function clearFilters() {
+  S.filters.search = '';
+  document.getElementById('search').value = '';
+  clearAdvancedFilters();
+}
+
+// ── Sort ─────────────────────────────────────────────────
 
 function sortBy(col) {
   S.sort.dir = (S.sort.col === col && S.sort.dir === 'asc') ? 'desc' : 'asc';
@@ -62,6 +121,8 @@ function onCardSort(value) {
   renderAll();
 }
 
+// ── View / Columns ───────────────────────────────────────
+
 function setView(view) {
   S.view = view;
   try { localStorage.setItem('rpgmkbr-view', view); } catch (_) {}
@@ -78,13 +139,7 @@ function toggleColumnsMenu() {
   document.getElementById('columns-menu').classList.toggle('open');
 }
 
-document.addEventListener('click', e => {
-  const btn  = document.getElementById('columns-button');
-  const menu = document.getElementById('columns-menu');
-  if (!btn.contains(e.target) && !menu.contains(e.target)) {
-    menu.classList.remove('open');
-  }
-});
+// ── Theme / Lang ─────────────────────────────────────────
 
 function setTheme(theme) {
   S.theme = theme;
@@ -100,52 +155,22 @@ function setLang(lang) {
   renderAll();
 }
 
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
-}
+// ── Modals ───────────────────────────────────────────────
 
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('open');
-  });
-});
-
-document.getElementById('login-password').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-});
-
-function sendContact() {
-  const name    = document.getElementById('contact-name').value.trim();
-  const email   = document.getElementById('contact-email').value.trim();
-  const message = document.getElementById('contact-message').value.trim();
-
-  if (!message) return;
-
-  const subject  = encodeURIComponent('RPGMKBR — Contato');
-  const body     = encodeURIComponent(
-    `De: ${name}${email ? ` <${email}>` : ''}\n\n${message}`
-  );
-  window.location.href = `mailto:contact@rpgmkbr.com?subject=${subject}&body=${body}`;
-
-  closeModal('contact-modal');
-}
+// ── Tooltip ──────────────────────────────────────────────
 
 function showTooltip(e, ss) {
   if (window.innerWidth < 800) return;
-
   const img = document.getElementById('tooltip-image');
   const fb  = document.getElementById('tooltip-fallback');
   const tt  = document.getElementById('tooltip');
-
   const hasImage = ss && ss !== 'null' && ss !== '';
   img.style.display = hasImage ? 'block' : 'none';
   fb.style.display  = hasImage ? 'none'  : 'block';
   if (hasImage) img.src = ss;
-
   tt.style.display = 'flex';
   _positionTooltip(e);
 }
@@ -157,14 +182,63 @@ function hideTooltip() {
 function _positionTooltip(e) {
   const tt = document.getElementById('tooltip');
   if (tt.style.display !== 'flex') return;
-
   const W = 224, H = 140;
   let x = e.clientX + 14, y = e.clientY + 14;
   if (x + W > window.innerWidth  - 8) x = e.clientX - W - 10;
   if (y + H > window.innerHeight - 8) y = e.clientY - H - 10;
-
   tt.style.left = `${x}px`;
   tt.style.top  = `${y}px`;
 }
+
+// ── Contact ──────────────────────────────────────────────
+
+function sendContact() {
+  const name    = document.getElementById('contact-name').value.trim();
+  const email   = document.getElementById('contact-email').value.trim();
+  const message = document.getElementById('contact-message').value.trim();
+  if (!message) return;
+  const subject = encodeURIComponent('RPGMKBR — Contato');
+  const body    = encodeURIComponent(`De: ${name}${email ? ` <${email}>` : ''}\n\n${message}`);
+  window.location.href = `mailto:contact@rpgmkbr.com?subject=${subject}&body=${body}`;
+  closeModal('contact-modal');
+}
+
+// ── Event Listeners ──────────────────────────────────────
+
+// Close standard modals on overlay click; confirm-clear has no-click-close
+document.querySelectorAll('.modal-overlay:not(.no-click-close)').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+document.addEventListener('click', e => {
+  // Close columns menu
+  const btn  = document.getElementById('columns-button');
+  const menu = document.getElementById('columns-menu');
+  if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+
+  // Close advanced search dropdowns on outside click
+  if (_openDropdown !== null) {
+    const panel = document.getElementById('advanced-panel');
+    if (panel && !panel.contains(e.target)) {
+      _openDropdown = null;
+      renderAdvancedDropdowns();
+    }
+  }
+
+  // Close edit tag dropdown on outside click
+  const editTagMs = document.getElementById('edit-tag-ms');
+  const editTagDd = document.getElementById('edit-tag-dropdown');
+  if (editTagMs && editTagDd && !editTagMs.contains(e.target)) {
+    editTagDd.classList.remove('open');
+  }
+});
 
 document.addEventListener('mousemove', _positionTooltip);
