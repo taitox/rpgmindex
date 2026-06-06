@@ -23,7 +23,7 @@ let S = {
     developer: true,
     version:   true,
     year:      true,
-    language:  true,
+    country:   true,
     tags:      true,
   },
 };

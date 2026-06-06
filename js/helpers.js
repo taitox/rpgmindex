@@ -13,7 +13,7 @@ function downloadBadge(g) {
   if (!g.url) {
     return `<span class="badge badge-download badge-unavailable">${i('unavail')}</span>`;
   }
-  return `<a href="${g.url}" target="_blank" rel="noopener" class="badge badge-download badge-free">⬇ ${i('dl')}</a>`;
+  return `<a href="${g.url}" target="_blank" rel="noopener" class="badge badge-download badge-free" onclick="event.stopPropagation()">⬇ ${i('dl')}</a>`;
 }
 
 function versionBadge(vId) {
@@ -27,7 +27,7 @@ function tagBadge(tagName) {
 
   // "Free" — reserved dark green, always hardcoded via CSS class
   if (tagName === 'Free') {
-    return `<span class="badge badge-tag badge-tag-free ${active}" onclick="toggleTag('${tagName}')" role="button" tabindex="0">${tagName}</span>`;
+    return `<span class="badge badge-tag badge-tag-free ${active}" onclick="event.stopPropagation();toggleTag('${tagName}')" role="button" tabindex="0">${tagName}</span>`;
   }
 
   // Other tags — use custom DB colors if defined, otherwise CSS defaults
@@ -35,7 +35,7 @@ function tagBadge(tagName) {
   const hasCls = def && def.bg && def.tx && def.bd;
   const style  = hasCls ? `style="background:${def.bg};color:${def.tx};border-color:${def.bd}"` : '';
 
-  return `<span class="badge badge-tag ${active}" ${style} onclick="toggleTag('${tagName}')" role="button" tabindex="0">${tagName}</span>`;
+  return `<span class="badge badge-tag ${active}" ${style} onclick="event.stopPropagation();toggleTag('${tagName}')" role="button" tabindex="0">${tagName}</span>`;
 }
 
 // ── Filter + sort pipeline ────────────────────────────────
@@ -50,6 +50,7 @@ function filteredGames() {
         g.title.toLowerCase().includes(q)     ||
         g.developer.toLowerCase().includes(q) ||
         String(g.year).includes(q)            ||
+        g.country.toLowerCase().includes(q)   ||
         (getVer(g.vId)?.label.toLowerCase().includes(q)) ||
         g.tags.some(t => t.toLowerCase().includes(q));
       if (!hit) return false;
@@ -77,6 +78,7 @@ function filteredGames() {
     switch (col) {
       case 'developer': av = a.developer.toLowerCase(); bv = b.developer.toLowerCase(); break;
       case 'year':      av = a.year;                    bv = b.year;                    break;
+      case 'country':   av = a.country.toLowerCase();   bv = b.country.toLowerCase();   break;
       default:          av = a.title.toLowerCase();     bv = b.title.toLowerCase();
     }
     if (av !== bv) return av < bv ? -sign : sign;

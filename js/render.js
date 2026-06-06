@@ -45,39 +45,42 @@ function syncI18n() {
   document.getElementById('search').placeholder = i('search');
   setText('tooltip-fallback', i('noss'));
 
-  setText('login-title',     i('adminlogin'));
-  setText('login-subtitle',  i('adminsub'));
-  setText('login-email-label', i('email'));
+  setText('login-title',          i('adminlogin'));
+  setText('login-subtitle',       i('adminsub'));
+  setText('login-email-label',    i('email'));
   setText('login-password-label', i('pass'));
-  setText('login-button',    i('login'));
-  setText('login-cancel',    i('cancel'));
+  setText('login-button',         i('login'));
+  setText('login-cancel',         i('cancel'));
 
-  setText('edit-label-title', i('edtitle'));
-  setText('edit-label-developer', i('eddev'));
-  setText('edit-label-version', i('edver'));
-  setText('edit-label-year', i('edyr'));
-  setText('edit-label-screenshot', i('edss'));
-  setText('edit-label-download', i('eddl'));
-  setText('edit-label-tags', i('edtags'));
-  setText('edit-label-languages', i('edlang'));
-  setText('download-label-available', i('avail'));
+  setText('edit-label-title',       i('edtitle'));
+  setText('edit-label-developer',   i('eddev'));
+  setText('edit-label-version',     i('edver'));
+  setText('edit-label-year',        i('edyr'));
+  setText('edit-label-screenshot',  i('edss'));
+  setText('edit-label-download',    i('eddl'));
+  setText('edit-label-tags',        i('edtags'));
+  setText('edit-label-country',     i('edcountry'));
+  setText('download-label-available',   i('avail'));
   setText('download-label-unavailable', i('na'));
-  setText('screenshot-url-label', i('ssurl'));
-  setText('screenshot-file-label', i('ssupload'));
+  setText('screenshot-url-label',   i('ssurl'));
+  setText('screenshot-file-label',  i('ssupload'));
   setText('edit-cancel', i('cancel'));
-  setText('edit-save', i('save'));
+  setText('edit-save',   i('save'));
   setText('edit-tag-error', i('tagsrequired'));
+
+  const cInput = document.getElementById('edit-game-country');
+  if (cInput) cInput.placeholder = i('countryph');
 
   const editUrl = document.getElementById('edit-download-url');
   if (editUrl) editUrl.placeholder = 'https://…';
 
-  setText('contact-title',      i('contacttitle'));
-  setText('contact-subtitle',   i('contactsub'));
-  setText('contact-name-label', i('contactname'));
-  setText('contact-email-label', i('contactemail'));
+  setText('contact-title',         i('contacttitle'));
+  setText('contact-subtitle',      i('contactsub'));
+  setText('contact-name-label',    i('contactname'));
+  setText('contact-email-label',   i('contactemail'));
   setText('contact-message-label', i('contactmsg'));
-  setText('contact-send',       i('contactsend'));
-  setText('contact-cancel',     i('cancel'));
+  setText('contact-send',          i('contactsend'));
+  setText('contact-cancel',        i('cancel'));
 
   const tagNames = TAGS.map(t => t.name);
   document.getElementById('edit-tags-checkboxes').innerHTML =
@@ -90,7 +93,7 @@ function syncI18n() {
   document.getElementById('lang-en-button').classList.toggle('on', S.lang === 'en');
   document.getElementById('lang-pt-button').classList.toggle('on', S.lang === 'pt');
   document.getElementById('theme-light-button').classList.toggle('on', S.theme === 'light');
-  document.getElementById('theme-dark-button').classList.toggle('on', S.theme === 'dark');
+  document.getElementById('theme-dark-button').classList.toggle('on',  S.theme === 'dark');
   document.getElementById('view-compact').classList.toggle('on', S.view === 'compact');
   document.getElementById('view-cards').classList.toggle('on',   S.view === 'cards');
   document.getElementById('mode-or').classList.toggle('on',    S.filters.tagMode === 'or');
@@ -145,7 +148,7 @@ function renderColumnsMenu() {
     developer: i('dev'),
     version:   i('ver'),
     year:      i('yr'),
-    language:  i('lang'),
+    country:   i('country'),
     tags:      i('tags'),
   };
 
@@ -169,14 +172,14 @@ function updateAdminBar() {
 
 function renderTableHeaders() {
   const cols = [
-    { id: 'title',     label: i('title'), cls: 'col-title sortable' },
-    S.cols.developer ? { id: 'developer', label: i('dev'),     cls: 'sortable' } : null,
-    S.cols.version   ? { id: 'version',   label: i('ver'),     cls: ''         } : null,
-    S.cols.year      ? { id: 'year',      label: i('yr'),      cls: 'sortable' } : null,
-    S.cols.language  ? { id: 'language',  label: i('lang'),    cls: ''         } : null,
-    S.cols.tags      ? { id: 'tags',      label: i('tags'),    cls: ''         } : null,
-    { id: 'download',   label: i('dl'),   cls: 'col-download'  },
-    S.isAdmin        ? { id: 'actions',   label: i('actions'), cls: ''         } : null,
+    { id: 'title',     label: i('title'),   cls: 'col-title sortable' },
+    S.cols.developer ? { id: 'developer', label: i('dev'),     cls: 'sortable'     } : null,
+    S.cols.version   ? { id: 'version',   label: i('ver'),     cls: ''             } : null,
+    S.cols.year      ? { id: 'year',      label: i('yr'),      cls: 'sortable'     } : null,
+    S.cols.country   ? { id: 'country',   label: i('country'), cls: 'sortable'     } : null,
+    S.cols.tags      ? { id: 'tags',      label: i('tags'),    cls: ''             } : null,
+    { id: 'download',   label: i('dl'),    cls: 'col-download'  },
+    S.isAdmin        ? { id: 'actions',   label: i('actions'), cls: ''             } : null,
   ].filter(Boolean);
 
   document.getElementById('table-header-row').innerHTML = cols.map(c => {
@@ -203,17 +206,17 @@ function renderTable(games) {
   tbody.innerHTML = games.map(g => {
     const adminCols = S.isAdmin
       ? `<td><div class="action-buttons">
-          <button class="action-button"         onclick="openEdit('${g.id}')" title="${i('editgame')}">✏️</button>
-          <button class="action-button delete-button" onclick="delGame('${g.id}')"  title="Delete">🗑️</button>
+          <button class="action-button"              onclick="event.stopPropagation();openEdit('${g.id}')" title="${i('editgame')}">✏️</button>
+          <button class="action-button delete-button" onclick="event.stopPropagation();delGame('${g.id}')"  title="Delete">🗑️</button>
         </div></td>`
       : '';
 
-    return `<tr onmouseenter="showTooltip(event,'${g.ss || ''}')" onmouseleave="hideTooltip()">
+    return `<tr onclick="openGameModal('${g.id}')" onmouseenter="showTooltip(event,'${g.ss || ''}')" onmouseleave="hideTooltip()">
       <td class="col-title">${g.title}</td>
       ${S.cols.developer ? `<td class="col-developer">${g.developer}</td>` : ''}
       ${S.cols.version   ? `<td><div class="badge-wrapper">${versionBadge(g.vId)}</div></td>` : ''}
       ${S.cols.year      ? `<td class="col-year">${g.year}</td>` : ''}
-      ${S.cols.language  ? `<td><div class="badge-wrapper">${g.langs.map(l => `<span class="badge badge-language">${l}</span>`).join('')}</div></td>` : ''}
+      ${S.cols.country   ? `<td class="col-country">${g.country}</td>` : ''}
       ${S.cols.tags      ? `<td><div class="badge-wrapper">${g.tags.map(t => tagBadge(t)).join('')}</div></td>` : ''}
       <td class="col-download"><div class="badge-wrapper">${downloadBadge(g)}</div></td>
       ${adminCols}
@@ -245,16 +248,16 @@ function renderCards(games) {
       const ssPhStyle = g.ss ? 'display:none' : 'display:flex';
 
       const adminBtns = S.isAdmin
-        ? `<button class="action-button"         onclick="openEdit('${g.id}')" title="${i('editgame')}">✏️</button>
-           <button class="action-button delete-button" onclick="delGame('${g.id}')"  title="Delete">🗑️</button>`
+        ? `<button class="action-button"              onclick="event.stopPropagation();openEdit('${g.id}')" title="${i('editgame')}">✏️</button>
+           <button class="action-button delete-button" onclick="event.stopPropagation();delGame('${g.id}')"  title="Delete">🗑️</button>`
         : '';
 
-      return `<div class="card" style="animation-delay:${Math.min(idx * 25, 200)}ms">
+      return `<div class="card" style="animation-delay:${Math.min(idx * 25, 200)}ms" onclick="openGameModal('${g.id}')">
         ${ssImg}
         <div class="card-screenshot-fallback" style="${ssPhStyle}">${i('noss')}</div>
         <div class="card-body">
           <div class="card-title">${g.title}</div>
-          <div class="card-developer">${g.developer} · ${g.year}</div>
+          <div class="card-developer">${g.developer} · ${g.year} · ${g.country}</div>
           <div class="card-tags badge-wrapper">${g.tags.slice(0, 3).map(t => tagBadge(t)).join('')}</div>
         </div>
         <div class="card-footer">
@@ -266,4 +269,56 @@ function renderCards(games) {
   }
 
   grid.innerHTML = html;
+}
+
+// ── Game Detail Modal ─────────────────────────────────────
+
+function openGameModal(gameId) {
+  const g = GAMES.find(x => x.id === gameId);
+  if (!g) return;
+
+  // Screenshot
+  const ssImg = document.getElementById('game-detail-screenshot');
+  const ssFb  = document.getElementById('game-detail-screenshot-fallback');
+  if (g.ss) {
+    ssImg.src           = g.ss;
+    ssImg.style.display = 'block';
+    ssFb.style.display  = 'none';
+  } else {
+    ssImg.style.display = 'none';
+    ssFb.style.display  = 'flex';
+    ssFb.textContent    = i('noss');
+  }
+
+  // Title + discreet ID
+  document.getElementById('game-detail-title').textContent = g.title;
+  document.getElementById('game-detail-id').textContent    = `#${g.id}`;
+
+  // Meta row + version badge
+  document.getElementById('game-detail-meta').innerHTML = `
+    <div class="game-detail-meta-row">
+      <span class="gd-dev">${g.developer || '—'}</span>
+      <span class="gd-sep">·</span>
+      <span class="gd-year">${g.year || '—'}</span>
+      <span class="gd-sep">·</span>
+      <span class="gd-country">${g.country || 'Unknown'}</span>
+    </div>
+    <div class="gd-version">${versionBadge(g.vId)}</div>
+  `;
+
+  // All tags
+  document.getElementById('game-detail-tags').innerHTML =
+    `<div class="badge-wrapper">${g.tags.map(t => tagBadge(t)).join('')}</div>`;
+
+  // Footer: download + optional admin actions
+  let footer = `<div>${downloadBadge(g)}</div>`;
+  if (S.isAdmin) {
+    footer += `<div class="action-buttons">
+      <button class="action-button" onclick="closeModal('game-detail-modal');openEdit('${g.id}')" title="${i('editgame')}">✏️</button>
+      <button class="action-button delete-button" onclick="closeModal('game-detail-modal');delGame('${g.id}')" title="Delete">🗑️</button>
+    </div>`;
+  }
+  document.getElementById('game-detail-footer').innerHTML = footer;
+
+  openModal('game-detail-modal');
 }

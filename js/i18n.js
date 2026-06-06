@@ -1,7 +1,6 @@
 /* jshint esversion: 6 */
 'use strict';
 
-// Translation tables for PT-BR and EN.
 const T = {
   pt: {
     sub:      'Catálogo de jogos feitos no RPG Maker',
@@ -16,8 +15,8 @@ const T = {
     found:    n => `${n} jogo${n !== 1 ? 's' : ''} encontrado${n !== 1 ? 's' : ''}`,
     loading:  'Carregando…',
 
-    title:   'Título',      dev:  'Dev',      ver:    'Versão',
-    yr:      'Ano',         lang: 'Idioma',   tags:   'Tags',
+    title:   'Título',      dev:     'Dev',          ver:  'Versão',
+    yr:      'Ano',         country: 'País',          tags: 'Tags',
     dl:      'Download',    unavail: '❌ Indisponível',
     noss:    'Sem screenshot disponível.',
 
@@ -32,13 +31,14 @@ const T = {
     adminmode:  'Modo Admin',
     confirmdel: 'Excluir este jogo?',
 
-    edtitle:  'Título',           eddev:  'Desenvolvedor',
-    edver:    'Versão RPG Maker', edyr:   'Ano',
-    edss:     'Screenshot',       edurl:  'URL de Download',
-    eddl:     'Download',         edtags: 'Tags',
-    edlang:   'Idiomas',
-    avail:    'Disponível',       na:     'Indisponível',
-    ssurl:    'URL',              ssupload: 'Enviar Arquivo',
+    edtitle:   'Título',           eddev:     'Desenvolvedor',
+    edver:     'Versão RPG Maker', edyr:      'Ano',
+    edss:      'Screenshot',       edurl:     'URL de Download',
+    eddl:      'Download',         edtags:    'Tags',
+    edcountry: 'País de Origem',
+    avail:     'Disponível',       na:        'Indisponível',
+    ssurl:     'URL',              ssupload:  'Enviar Arquivo',
+    countryph: 'Digite ou selecione um país…',
 
     tagsrequired: 'Selecione pelo menos uma tag.',
 
@@ -64,8 +64,8 @@ const T = {
     found:    n => `${n} game${n !== 1 ? 's' : ''} found`,
     loading:  'Loading…',
 
-    title:   'Title',       dev:  'Developer',  ver:    'Version',
-    yr:      'Year',        lang: 'Language',   tags:   'Tags',
+    title:   'Title',       dev:     'Developer',     ver:  'Version',
+    yr:      'Year',        country: 'Country',        tags: 'Tags',
     dl:      'Download',    unavail: '❌ Unavailable',
     noss:    'No screenshot available.',
 
@@ -80,13 +80,14 @@ const T = {
     adminmode:  'Admin Mode',
     confirmdel: 'Delete this game?',
 
-    edtitle:  'Title',              eddev:  'Developer',
-    edver:    'RPG Maker Version',  edyr:   'Year',
-    edss:     'Screenshot',         edurl:  'Download URL',
-    eddl:     'Download',           edtags: 'Tags',
-    edlang:   'Languages',
-    avail:    'Available',          na:     'Unavailable',
-    ssurl:    'URL',                ssupload: 'Upload File',
+    edtitle:   'Title',              eddev:     'Developer',
+    edver:     'RPG Maker Version',  edyr:      'Year',
+    edss:      'Screenshot',         edurl:     'Download URL',
+    eddl:      'Download',           edtags:    'Tags',
+    edcountry: 'Country of Origin',
+    avail:     'Available',          na:        'Unavailable',
+    ssurl:     'URL',                ssupload:  'Upload File',
+    countryph: 'Type or select a country…',
 
     tagsrequired: 'Select at least one tag.',
 

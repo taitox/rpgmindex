@@ -47,11 +47,18 @@ function openEdit(gameId) {
     devList.innerHTML = getDevList().map(d => `<option value="${d}"/>`).join('');
   }
 
-  document.getElementById('edit-game-id').value    = gameId || '';
-  document.getElementById('edit-game-title').value = g?.title     || '';
-  document.getElementById('edit-game-developer').value   = g?.developer || '';
+  // Populate country datalist
+  const ctryList = document.getElementById('country-datalist');
+  if (ctryList) {
+    ctryList.innerHTML = COUNTRIES.map(c => `<option value="${c}"/>`).join('');
+  }
+
+  document.getElementById('edit-game-id').value        = gameId || '';
+  document.getElementById('edit-game-title').value     = g?.title     || '';
+  document.getElementById('edit-game-developer').value = g?.developer || '';
   document.getElementById('edit-game-version').value   = g?.vId       || VERSIONS[0]?.id || '';
-  document.getElementById('edit-game-year').value    = g?.year      || '';
+  document.getElementById('edit-game-year').value      = g?.year      || '';
+  document.getElementById('edit-game-country').value   = g?.country   || 'Unknown';
 
   // Screenshot — default to URL mode
   setScreenshotMode('url');
@@ -59,7 +66,7 @@ function openEdit(gameId) {
 
   // Download type
   const dlType = g?.url ? 'available' : 'na';
-  document.getElementById(`download-${dlType === 'available' ? 'available' : 'unavailable'}`).checked = true;
+  document.getElementById(dlType === 'available' ? 'download-available' : 'download-unavailable').checked = true;
   document.getElementById('edit-download-url').value = g?.url || '';
   toggleDownloadField();
 
@@ -70,12 +77,6 @@ function openEdit(gameId) {
     if (cb) cb.checked = g?.tags.includes(t.name) || false;
   });
   document.getElementById('edit-tag-error').style.display = 'none';
-
-  // Language checkboxes
-  LANGS_MAP.forEach(({ id, emoji }) => {
-    const cb = document.getElementById(id);
-    if (cb) cb.checked = g?.langs.includes(emoji) || false;
-  });
 
   setText('edit-modal-title', gameId ? i('editgame') : i('addgame'));
   openModal('edit-modal');
@@ -138,9 +139,7 @@ async function saveGame() {
     ? (document.getElementById('edit-download-url').value.trim() || null)
     : null;
 
-  const langs = LANGS_MAP
-    .filter(({ id }) => document.getElementById(id)?.checked)
-    .map(({ emoji }) => emoji);
+  const country = document.getElementById('edit-game-country').value.trim() || 'Unknown';
 
   // Screenshot — URL or uploaded file
   let ss = null;
@@ -158,7 +157,7 @@ async function saveGame() {
     developer: document.getElementById('edit-game-developer').value.trim()   || '',
     v_id:      document.getElementById('edit-game-version').value          || VERSIONS[0]?.id || '',
     year:      parseInt(document.getElementById('edit-game-year').value) || new Date().getFullYear(),
-    langs:     langs.length ? langs : ['🇧🇷'],
+    country,
     tags,
     ss,
     url,
