@@ -16,7 +16,7 @@
 <!-- LOADING OVERLAY -->
 <div class="loading-overlay hidden" id="loading-overlay">
   <div class="loading-spinner"></div>
-  <div class="loading-message" id="loading-message">Carregando…</div>
+  <div class="loading-message" data-i18n="loading">Carregando…</div>
 </div>
 
 <!-- TOP BAR -->
@@ -25,11 +25,11 @@
     <span class="logo-icon">♞</span>
     <div class="logo-text">
       <span class="logo-title">RPGMINDEX</span>
-      <span class="logo-sub" id="logo-sub">RPG Maker Games Directory</span>
+      <span class="logo-sub" data-i18n="sub" id="logo-sub"></span>
     </div>
   </a>
   <div class="topbar-right">
-    <div class="toggle-pill" id="lang-switch">
+    <div class="toggle-pill">
       <button onclick="setLang('en')" id="lang-en-button">🇺🇸</button>
       <button onclick="setLang('pt')" id="lang-pt-button" class="on">🇧🇷</button>
     </div>
@@ -37,8 +37,8 @@
       <button onclick="setTheme('light')" id="theme-light-button" class="on">☀️</button>
       <button onclick="setTheme('dark')"  id="theme-dark-button">🌙</button>
     </div>
-    <button class="button-base" id="contact-button" onclick="openModal('contact-modal')" title="Contact">
-      <span id="contact-button-label">✉️</span>
+    <button class="button-base" onclick="openModal('contact-modal')">
+      <span data-i18n="contact" id="contact-button-label"></span>
     </button>
     <button class="icon-button" id="admin-button" onclick="adminClick()" title="Admin">⚙️</button>
   </div>
@@ -46,10 +46,12 @@
 
 <!-- ADMIN BAR -->
 <div id="admin-bar">
-  <span class="admin-bar-left">🔐 <span id="admin-mode-label">Modo Admin</span> · <span id="admin-email-label"></span></span>
+  <span class="admin-bar-left">
+    🔐 <span data-i18n="adminmode" id="admin-mode-label"></span> · <span id="admin-email-label"></span>
+  </span>
   <div class="admin-bar-right">
-    <button onclick="openEdit(null)" id="admin-add-button">+ Adicionar Jogo</button>
-    <button onclick="doLogout()" id="admin-logout-button">Sair</button>
+    <button data-i18n="addgame"  id="admin-add-button"    onclick="openEdit(null)"></button>
+    <button data-i18n="logout"   id="admin-logout-button" onclick="doLogout()"></button>
   </div>
 </div>
 
@@ -61,18 +63,18 @@
     <div class="control-left">
       <div class="search-wrapper">
         <span class="search-icon">🔍</span>
-        <input class="search-input" id="search" type="search" placeholder="Buscar título, dev, tags…" oninput="onSearch(this.value)">
+        <input class="search-input" id="search" type="search" data-i18n-ph="search" oninput="onSearch(this.value)">
       </div>
-      <button class="button-base" id="advanced-search-button" onclick="toggleAdvancedSearch()">Busca Avançada</button>
+      <button class="button-base" id="advanced-search-button" onclick="toggleAdvancedSearch()"></button>
     </div>
     <div class="control-right">
       <div class="columns-wrapper">
-        <button class="button-base" id="columns-button" onclick="toggleColumnsMenu()">Colunas ▾</button>
+        <button class="button-base" id="columns-button" onclick="toggleColumnsMenu()"></button>
         <div class="columns-menu" id="columns-menu"></div>
       </div>
       <div class="view-toggle">
-        <button class="on" id="view-compact" onclick="setView('compact')">Compacto</button>
-        <button id="view-cards" onclick="setView('cards')">Cards</button>
+        <button class="on" data-i18n="compact" id="view-compact" onclick="setView('compact')"></button>
+        <button data-i18n="cards" id="view-cards" onclick="setView('cards')"></button>
       </div>
     </div>
   </div>
@@ -80,53 +82,46 @@
   <!-- ADVANCED SEARCH PANEL -->
   <div class="advanced-panel" id="advanced-panel">
     <div class="advanced-panel-header">
-      <span class="advanced-panel-title" id="adv-panel-title">Busca Avançada</span>
+      <span class="advanced-panel-title" data-i18n="advsearch" id="adv-panel-title"></span>
       <button class="advanced-panel-close" onclick="tryCloseAdvanced()" aria-label="Fechar">✕</button>
     </div>
     <div class="advanced-panel-body">
 
-      <!-- Version multi-select -->
       <div class="adv-control">
-        <label class="adv-control-label" id="adv-ver-label">Versão</label>
-        <div class="ms-wrapper" id="ms-version">
-          <button class="ms-trigger" onclick="toggleDropdown('version')">
-            <span id="ms-version-label">Todas as versões</span>
-            <span class="ms-arrow">▾</span>
+        <label class="adv-control-label" data-i18n="ver" id="adv-ver-label"></label>
+        <div class="ms-wrapper">
+          <button class="ms-trigger" onclick="toggleDropdown('ms-version-dropdown')">
+            <span id="ms-version-label"></span><span class="ms-arrow">▾</span>
           </button>
           <div class="ms-dropdown" id="ms-version-dropdown"></div>
         </div>
       </div>
 
-      <!-- Country multi-select -->
       <div class="adv-control">
-        <label class="adv-control-label" id="adv-ctr-label">País</label>
-        <div class="ms-wrapper" id="ms-country">
-          <button class="ms-trigger" onclick="toggleDropdown('country')">
-            <span id="ms-country-label">Todos os países</span>
-            <span class="ms-arrow">▾</span>
+        <label class="adv-control-label" data-i18n="country" id="adv-ctr-label"></label>
+        <div class="ms-wrapper">
+          <button class="ms-trigger" onclick="toggleDropdown('ms-country-dropdown')">
+            <span id="ms-country-label"></span><span class="ms-arrow">▾</span>
           </button>
           <div class="ms-dropdown" id="ms-country-dropdown"></div>
         </div>
       </div>
 
-      <!-- Free standalone toggle -->
       <div class="adv-control">
-        <label class="adv-control-label" id="adv-free-label">Free</label>
-        <button class="button-base" id="adv-free-button" onclick="toggleFreeOnly()">Apenas grátis</button>
+        <label class="adv-control-label" data-i18n="freeonly" id="adv-free-label"></label>
+        <button class="button-base" data-i18n="freeonly" id="adv-free-button" onclick="toggleFreeOnly()"></button>
       </div>
 
-      <!-- Tags multi-select + AND/OR -->
       <div class="adv-control adv-control-tags">
-        <label class="adv-control-label" id="adv-tags-label">Tags</label>
+        <label class="adv-control-label" data-i18n="tags" id="adv-tags-label"></label>
         <div class="adv-tags-row">
-          <div class="ms-wrapper" id="ms-tags">
-            <button class="ms-trigger" onclick="toggleDropdown('tags')">
-              <span id="ms-tags-label">Todas as tags</span>
-              <span class="ms-arrow">▾</span>
+          <div class="ms-wrapper">
+            <button class="ms-trigger" onclick="toggleDropdown('ms-tags-dropdown')">
+              <span id="ms-tags-label"></span><span class="ms-arrow">▾</span>
             </button>
             <div class="ms-dropdown" id="ms-tags-dropdown"></div>
           </div>
-          <div class="mode-toggle" id="adv-mode-toggle">
+          <div class="mode-toggle">
             <button class="on" id="adv-mode-or"  onclick="setTagMode('or')">OR</button>
             <button           id="adv-mode-and" onclick="setTagMode('and')">AND</button>
           </div>
@@ -134,13 +129,9 @@
       </div>
 
     </div>
-
-    <!-- Active filter chips -->
     <div class="advanced-chips-row" id="advanced-chips-row" style="display:none"></div>
-
-    <!-- Footer -->
     <div class="advanced-panel-footer">
-      <button class="clear-button" id="adv-clear-btn" onclick="clearAdvancedFilters()">Limpar tudo</button>
+      <button class="clear-button" data-i18n="clearall" id="adv-clear-btn" onclick="clearAdvancedFilters()"></button>
     </div>
   </div>
 
@@ -162,7 +153,7 @@
   <!-- CARDS VIEW -->
   <div id="cards-view">
     <div class="cards-toolbar">
-      <label id="sort-label">Ordenar por</label>
+      <label data-i18n="sortby" id="sort-label"></label>
       <select class="version-select" id="cards-sort" onchange="onCardSort(this.value)" style="min-width:150px">
         <option value="title">Título A→Z</option>
         <option value="title-d">Título Z→A</option>
@@ -179,7 +170,7 @@
 <!-- SCREENSHOT TOOLTIP -->
 <div id="tooltip">
   <img id="tooltip-image" src="" alt="Screenshot"/>
-  <div class="tooltip-fallback" id="tooltip-fallback">Sem screenshot disponível.</div>
+  <div class="tooltip-fallback" data-i18n="noss" id="tooltip-fallback"></div>
 </div>
 
 <!-- GAME DETAIL MODAL -->
@@ -202,14 +193,14 @@
   </div>
 </div>
 
-<!-- CONFIRM CLEAR MODAL (no outside-click close) -->
+<!-- CONFIRM CLEAR MODAL — .no-click-close prevents accidental dismissal -->
 <div class="modal-overlay no-click-close" id="confirm-clear-modal">
   <div class="modal-content">
-    <div class="modal-title"    id="confirm-clear-title">Limpar busca?</div>
-    <div class="modal-subtitle" id="confirm-clear-sub">Limpar todos os filtros ativos?</div>
+    <div class="modal-title"    data-i18n="confirmclear"    id="confirm-clear-title"></div>
+    <div class="modal-subtitle" data-i18n="confirmclearsub" id="confirm-clear-sub"></div>
     <div class="modal-actions">
-      <button class="button-secondary" onclick="keepAndClose()"      id="confirm-keep-btn">Manter</button>
-      <button class="button-primary"   onclick="confirmClearClose()" id="confirm-clear-btn">Limpar</button>
+      <button class="button-secondary" data-i18n="confirmkeep"     id="confirm-keep-btn"  onclick="keepAndClose()"></button>
+      <button class="button-primary"   data-i18n="confirmclearbtn" id="confirm-clear-btn" onclick="confirmClearClose()"></button>
     </div>
   </div>
 </div>
@@ -217,19 +208,19 @@
 <!-- ADMIN LOGIN MODAL -->
 <div class="modal-overlay" id="login-modal">
   <div class="modal-content">
-    <div class="modal-title"    id="login-title">Login Admin</div>
-    <div class="modal-subtitle" id="login-subtitle">Acesso restrito ao painel de administração</div>
+    <div class="modal-title"    data-i18n="adminlogin" id="login-title"></div>
+    <div class="modal-subtitle" data-i18n="adminsub"   id="login-subtitle"></div>
     <div class="field">
-      <label id="login-email-label">E-mail</label>
+      <label data-i18n="email" id="login-email-label"></label>
       <input id="login-email" type="email" placeholder="admin@example.com"/>
     </div>
     <div class="field">
-      <label id="login-password-label">Senha</label>
+      <label data-i18n="pass" id="login-password-label"></label>
       <input id="login-password" type="password"/>
     </div>
     <div class="modal-actions">
-      <button class="button-secondary" onclick="closeModal('login-modal')" id="login-cancel">Cancelar</button>
-      <button class="button-primary"   onclick="doLogin()"                 id="login-button">Entrar</button>
+      <button class="button-secondary" data-i18n="cancel" id="login-cancel" onclick="closeModal('login-modal')"></button>
+      <button class="button-primary"   data-i18n="login"  id="login-button" onclick="doLogin()"></button>
     </div>
     <div class="login-error" id="login-error">Credenciais inválidas.</div>
   </div>
@@ -238,84 +229,88 @@
 <!-- EDIT / ADD GAME MODAL -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal-content large">
-    <div class="modal-title" id="edit-modal-title">Editar Jogo</div>
+    <div class="modal-title" id="edit-modal-title"></div>
     <input type="hidden" id="edit-game-id"/>
 
     <div class="field-row">
       <div class="field">
-        <label id="edit-label-title">Título</label>
+        <label data-i18n="edtitle" id="edit-label-title"></label>
         <input id="edit-game-title" type="text" placeholder="Nome do jogo"/>
       </div>
       <div class="field">
-        <label id="edit-label-developer">Desenvolvedor</label>
-        <input id="edit-game-developer" type="text" placeholder="Dev ou estúdio" list="developer-list" autocomplete="off"/>
+        <label data-i18n="eddev" id="edit-label-developer"></label>
+        <input id="edit-game-developer" type="text" list="developer-list" autocomplete="off" placeholder="Dev ou estúdio"/>
         <datalist id="developer-list"></datalist>
       </div>
     </div>
 
     <div class="field-row">
       <div class="field">
-        <label id="edit-label-version">Versão RPG Maker</label>
+        <label data-i18n="edver" id="edit-label-version"></label>
         <select id="edit-game-version"></select>
       </div>
       <div class="field">
-        <label id="edit-label-year">Ano</label>
+        <label data-i18n="edyr" id="edit-label-year"></label>
         <input id="edit-game-year" type="number" min="1995" max="2030" placeholder="AAAA"/>
       </div>
     </div>
 
     <div class="field">
-      <label id="edit-label-country">País de Origem</label>
-      <input id="edit-game-country" type="text" list="country-datalist" placeholder="Digite ou selecione um país…" autocomplete="off"/>
+      <label data-i18n="edcountry" id="edit-label-country"></label>
+      <input id="edit-game-country" type="text" list="country-datalist" data-i18n-ph="countryph" autocomplete="off"/>
       <datalist id="country-datalist"></datalist>
     </div>
 
     <div class="field">
-      <div class="field-label" id="edit-label-screenshot">Screenshot</div>
+      <div class="field-label" data-i18n="edss" id="edit-label-screenshot"></div>
       <div class="screenshot-mode-toggle">
-        <button type="button" id="screenshot-url-button"  class="on" onclick="setScreenshotMode('url')"><span id="screenshot-url-label">URL</span></button>
-        <button type="button" id="screenshot-file-button"            onclick="setScreenshotMode('file')"><span id="screenshot-file-label">Enviar Arquivo</span></button>
+        <button type="button" id="screenshot-url-button"  class="on" onclick="setScreenshotMode('url')">
+          <span data-i18n="ssurl" id="screenshot-url-label"></span>
+        </button>
+        <button type="button" id="screenshot-file-button" onclick="setScreenshotMode('file')">
+          <span data-i18n="ssupload" id="screenshot-file-label"></span>
+        </button>
       </div>
       <input id="edit-screenshot-url"  type="url"  placeholder="https://…"/>
       <input id="edit-screenshot-file" type="file" accept="image/*" style="display:none"/>
     </div>
 
     <div class="field">
-      <div class="field-label" id="edit-label-download">Download</div>
+      <div class="field-label" data-i18n="eddl" id="edit-label-download"></div>
       <div class="download-options">
         <div class="download-option">
           <input type="radio" name="download-type" id="download-available" value="available" onchange="toggleDownloadField()" checked/>
-          <label for="download-available" id="download-label-available">Disponível</label>
+          <label for="download-available" data-i18n="avail" id="download-label-available"></label>
         </div>
         <div class="download-option">
           <input type="radio" name="download-type" id="download-unavailable" value="na" onchange="toggleDownloadField()"/>
-          <label for="download-unavailable" id="download-label-unavailable">Lost Media</label>
+          <label for="download-unavailable" data-i18n="na2" id="download-label-unavailable"></label>
         </div>
       </div>
       <input id="edit-download-url" type="url" placeholder="https://…" style="margin-top:6px"/>
     </div>
 
     <div class="field">
-      <div class="field-label" id="edit-label-tags">Tags</div>
+      <div class="field-label" data-i18n="edtags" id="edit-label-tags"></div>
       <div class="edit-tag-ms" id="edit-tag-ms">
         <div class="edit-tag-input-row">
           <input type="text" id="edit-tag-input"
-                 placeholder="Selecionar ou adicionar tag…"
+                 data-i18n-ph="tagph"
                  oninput="onEditTagInput(this.value)"
                  onkeydown="onEditTagKeydown(event)"
-                 onfocus="renderEditTagDropdown(_editTagFilter)"
+                 onfocus="renderEditTagDropdown(editForm.tagFilter)"
                  autocomplete="off"/>
           <span class="ms-arrow" onclick="toggleEditTagDropdown()" style="cursor:pointer;padding:0 4px">▾</span>
         </div>
         <div class="ms-dropdown" id="edit-tag-dropdown"></div>
         <div class="edit-tag-chips" id="edit-tag-chips"></div>
       </div>
-      <div class="login-error" id="edit-tag-error" style="display:none;text-align:left">Selecione pelo menos uma tag.</div>
+      <div class="login-error" data-i18n="tagsrequired" id="edit-tag-error" style="display:none;text-align:left"></div>
     </div>
 
     <div class="modal-actions">
-      <button class="button-secondary" onclick="closeModal('edit-modal')" id="edit-cancel">Cancelar</button>
-      <button class="button-primary"   onclick="saveGame()"               id="edit-save">Salvar</button>
+      <button class="button-secondary" data-i18n="cancel" id="edit-cancel" onclick="closeModal('edit-modal')"></button>
+      <button class="button-primary"   data-i18n="save"   id="edit-save"   onclick="saveGame()"></button>
     </div>
   </div>
 </div>
@@ -323,28 +318,28 @@
 <!-- CONTACT MODAL -->
 <div class="modal-overlay" id="contact-modal">
   <div class="modal-content">
-    <div class="modal-title"    id="contact-title">Contato</div>
-    <div class="modal-subtitle" id="contact-subtitle">Envie uma mensagem para a equipe do RPGMINDEX.</div>
+    <div class="modal-title"    data-i18n="contacttitle" id="contact-title"></div>
+    <div class="modal-subtitle" data-i18n="contactsub"   id="contact-subtitle"></div>
     <div class="field">
-      <label id="contact-name-label">Nome</label>
+      <label data-i18n="contactname"  id="contact-name-label"></label>
       <input id="contact-name" type="text" placeholder="Seu nome"/>
     </div>
     <div class="field">
-      <label id="contact-email-label">E-mail</label>
+      <label data-i18n="contactemail" id="contact-email-label"></label>
       <input id="contact-email" type="email" placeholder="seu@email.com"/>
     </div>
     <div class="field">
-      <label id="contact-message-label">Mensagem</label>
+      <label data-i18n="contactmsg"   id="contact-message-label"></label>
       <textarea id="contact-message" placeholder="…"></textarea>
     </div>
     <div class="modal-actions">
-      <button class="button-secondary" onclick="closeModal('contact-modal')" id="contact-cancel">Cancelar</button>
-      <button class="button-primary"   onclick="sendContact()"               id="contact-send">Enviar</button>
+      <button class="button-secondary" data-i18n="cancel"      id="contact-cancel" onclick="closeModal('contact-modal')"></button>
+      <button class="button-primary"   data-i18n="contactsend" id="contact-send"   onclick="sendContact()"></button>
     </div>
   </div>
 </div>
 
-<!-- JS — load order matters -->
+<!-- JS — order matters: data → state → i18n → helpers → render → admin → ui → app -->
 <script src="js/supabase-client.js"></script>
 <script src="js/data.js"></script>
 <script src="js/state.js"></script>

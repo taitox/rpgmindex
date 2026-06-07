@@ -1,10 +1,8 @@
-/* jshint esversion: 6 */
 'use strict';
 
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
-}
+// ── Core ──────────────────────────────────────────────────
+
+function setText(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
 
 function renderAll() {
   syncI18n();
@@ -12,7 +10,7 @@ function renderAll() {
   renderColumnsMenu();
   updateAdminBar();
 
-  const games = filteredGames();
+  const games = sortGames(filterGames());
   updateResultCount(games.length);
 
   if (S.view === 'compact') {
@@ -27,82 +25,23 @@ function renderAll() {
   }
 }
 
-// ── i18n sync ─────────────────────────────────────────────
+// ── i18n ──────────────────────────────────────────────────
+// Static text: data-i18n attribute on the element, key is the attribute value.
+// Placeholders: data-i18n-ph attribute.
+// Toggle states and dynamic labels are handled below separately.
 
 function syncI18n() {
-  setText('logo-sub',        i('sub'));
-  setText('view-compact',    i('compact'));
-  setText('view-cards',      i('cards'));
-  setText('sort-label',      i('sortby'));
-  setText('admin-mode-label',    i('adminmode'));
-  setText('admin-logout-button', i('logout'));
-  setText('admin-add-button',    i('addgame'));
-  setText('contact-button-label', i('contact'));
+  document.querySelectorAll('[data-i18n]')
+    .forEach(el => { el.textContent = i(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]')
+    .forEach(el => { el.placeholder = i(el.dataset.i18nPh); });
 
+  // Special cases not suited for data attributes
   document.getElementById('columns-button').textContent = `${i('cols')} ▾`;
-  document.getElementById('search').placeholder = i('search');
-  setText('tooltip-fallback', i('noss'));
-
-  // Advanced search panel static labels
-  setText('adv-panel-title',   i('advsearch'));
-  setText('adv-ver-label',     i('ver'));
-  setText('adv-ctr-label',     i('country'));
-  setText('adv-free-label',    i('freeonly'));
-  setText('adv-tags-label',    i('tags'));
-  setText('adv-clear-btn',     i('clearall'));
-
-  // Confirm-clear modal
-  setText('confirm-clear-title', i('confirmclear'));
-  setText('confirm-clear-sub',   i('confirmclearsub'));
-  setText('confirm-keep-btn',    i('confirmkeep'));
-  setText('confirm-clear-btn',   i('confirmclearbtn'));
-
-  // Login modal
-  setText('login-title',          i('adminlogin'));
-  setText('login-subtitle',       i('adminsub'));
-  setText('login-email-label',    i('email'));
-  setText('login-password-label', i('pass'));
-  setText('login-button',         i('login'));
-  setText('login-cancel',         i('cancel'));
-
-  // Edit modal
-  setText('edit-label-title',       i('edtitle'));
-  setText('edit-label-developer',   i('eddev'));
-  setText('edit-label-version',     i('edver'));
-  setText('edit-label-year',        i('edyr'));
-  setText('edit-label-screenshot',  i('edss'));
-  setText('edit-label-download',    i('eddl'));
-  setText('edit-label-tags',        i('edtags'));
-  setText('edit-label-country',     i('edcountry'));
-  setText('download-label-available',   i('avail'));
-  setText('download-label-unavailable', i('na'));
-  setText('screenshot-url-label',   i('ssurl'));
-  setText('screenshot-file-label',  i('ssupload'));
-  setText('edit-cancel', i('cancel'));
-  setText('edit-save',   i('save'));
-  setText('edit-tag-error', i('tagsrequired'));
-
-  const cInput = document.getElementById('edit-game-country');
-  if (cInput) cInput.placeholder = i('countryph');
-  const tagInput = document.getElementById('edit-tag-input');
-  if (tagInput) tagInput.placeholder = i('tagph');
-  const editUrl = document.getElementById('edit-download-url');
-  if (editUrl) editUrl.placeholder = 'https://…';
-
-  // Contact modal
-  setText('contact-title',         i('contacttitle'));
-  setText('contact-subtitle',      i('contactsub'));
-  setText('contact-name-label',    i('contactname'));
-  setText('contact-email-label',   i('contactemail'));
-  setText('contact-message-label', i('contactmsg'));
-  setText('contact-send',          i('contactsend'));
-  setText('contact-cancel',        i('cancel'));
-
-  // Edit modal version select
   document.getElementById('edit-game-version').innerHTML =
     VERSIONS.map(v => `<option value="${v.id}">${v.label}</option>`).join('');
 
-  // Toggle states
+  // Toggle button states
   document.getElementById('lang-en-button').classList.toggle('on', S.lang === 'en');
   document.getElementById('lang-pt-button').classList.toggle('on', S.lang === 'pt');
   document.getElementById('theme-light-button').classList.toggle('on', S.theme === 'light');
@@ -121,11 +60,9 @@ function renderAdvancedSearch() {
 
   panel.classList.toggle('open', S.advancedOpen);
 
-  // Button label + active indicator
-  const filterCount = S.filters.versions.length + S.filters.countries.length +
-                      (S.filters.freeOnly ? 1 : 0) + S.filters.tags.length;
-  btn.textContent = filterCount > 0 ? `${i('advsearch')} · ${filterCount}` : i('advsearch');
-  btn.classList.toggle('on', S.advancedOpen || filterCount > 0);
+  const count = activeFilterCount();
+  btn.textContent = count > 0 ? `${i('advsearch')} · ${count}` : i('advsearch');
+  btn.classList.toggle('on', S.advancedOpen || count > 0);
 
   if (!S.advancedOpen) return;
 
@@ -137,96 +74,78 @@ function renderAdvancedSearch() {
   renderAdvancedChips();
 }
 
-function renderAdvancedDropdowns() {
-  // Version dropdown
-  const versionOptions = getVersionsInUse();
-  const vddEl = document.getElementById('ms-version-dropdown');
-  if (vddEl) {
-    vddEl.innerHTML = versionOptions.map(v =>
-      `<div class="ms-option ${S.filters.versions.includes(v.id) ? 'selected' : ''}"
-            onclick="toggleVersion('${v.id}')">
-        <span class="ms-check">${S.filters.versions.includes(v.id) ? '✓' : ''}</span>${v.label}
-      </div>`
-    ).join('') || `<div class="ms-empty">${i('allver')}</div>`;
-    vddEl.classList.toggle('open', _openDropdown === 'version');
-  }
-  const vLabel = document.getElementById('ms-version-label');
-  if (vLabel) {
-    vLabel.textContent = S.filters.versions.length === 0
-      ? i('allver')
-      : S.filters.versions.map(id => getVer(id)?.label || id).join(', ');
-  }
+// Renders a standard multi-select dropdown (versions and countries use this).
+// cfg: { ddId, lblId, options [{value, label}], selected [], toggleFn, emptyKey, summaryFn }
+function renderFilterDropdown({ ddId, lblId, options, selected, toggleFn, emptyKey, summaryFn }) {
+  const dd = document.getElementById(ddId);
+  const lb = document.getElementById(lblId);
+  if (!dd) return;
+  dd.innerHTML = options.map(({ value, label }) => {
+    const sel = selected.includes(value);
+    return `<div class="ms-option ${sel ? 'selected' : ''}" onclick="${toggleFn}('${value}')">
+      <span class="ms-check">${sel ? '✓' : ''}</span>${label}
+    </div>`;
+  }).join('') || `<div class="ms-empty">${i(emptyKey)}</div>`;
+  dd.classList.toggle('open', S.openDropdown === ddId);
+  if (lb) lb.textContent = summaryFn();
+}
 
-  // Country dropdown
-  const countryOptions = getCountriesInUse();
-  const cddEl = document.getElementById('ms-country-dropdown');
-  if (cddEl) {
-    cddEl.innerHTML = countryOptions.map(c =>
-      `<div class="ms-option ${S.filters.countries.includes(c) ? 'selected' : ''}"
-            onclick="toggleCountry('${c}')">
-        <span class="ms-check">${S.filters.countries.includes(c) ? '✓' : ''}</span>${c}
-      </div>`
-    ).join('') || `<div class="ms-empty">${i('allcountries')}</div>`;
-    cddEl.classList.toggle('open', _openDropdown === 'country');
-  }
-  const cLabel = document.getElementById('ms-country-label');
-  if (cLabel) {
-    cLabel.textContent = S.filters.countries.length === 0
-      ? i('allcountries')
-      : S.filters.countries.join(', ');
-  }
-
-  // Tags dropdown — Free syncs with freeOnly toggle
-  const tddEl = document.getElementById('ms-tags-dropdown');
-  if (tddEl) {
-    tddEl.innerHTML = TAGS.map(t => {
-      if (t.name === 'Free') {
-        return `<div class="ms-option ${S.filters.freeOnly ? 'selected' : ''}"
-                     onclick="toggleFreeOnly()">
-          <span class="ms-check">${S.filters.freeOnly ? '✓' : ''}</span>${t.name}
-        </div>`;
-      }
-      return `<div class="ms-option ${S.filters.tags.includes(t.name) ? 'selected' : ''}"
-                   onclick="toggleTag('${t.name}')">
-        <span class="ms-check">${S.filters.tags.includes(t.name) ? '✓' : ''}</span>${t.name}
-      </div>`;
-    }).join('') || `<div class="ms-empty">${i('alltags')}</div>`;
-    tddEl.classList.toggle('open', _openDropdown === 'tags');
-  }
-  const tLabel = document.getElementById('ms-tags-label');
-  if (tLabel) {
+// Tags dropdown has special logic (Free routes to freeOnly) so gets its own renderer.
+function renderTagsDropdown() {
+  const dd = document.getElementById('ms-tags-dropdown');
+  const lb = document.getElementById('ms-tags-label');
+  if (!dd) return;
+  dd.innerHTML = TAGS.map(t => {
+    const isFree = t.name === 'Free';
+    const sel  = isFree ? S.filters.freeOnly : S.filters.tags.includes(t.name);
+    const fn   = isFree ? 'toggleFreeOnly()' : `toggleTag('${t.name}')`;
+    return `<div class="ms-option ${sel ? 'selected' : ''}" onclick="${fn}">
+      <span class="ms-check">${sel ? '✓' : ''}</span>${t.name}
+    </div>`;
+  }).join('') || `<div class="ms-empty">${i('alltags')}</div>`;
+  dd.classList.toggle('open', S.openDropdown === 'ms-tags-dropdown');
+  if (lb) {
     const active = [...(S.filters.freeOnly ? ['Free'] : []), ...S.filters.tags];
-    tLabel.textContent = active.length === 0 ? i('alltags') : active.join(', ');
+    lb.textContent = active.length ? active.join(', ') : i('alltags');
   }
+}
+
+function renderAdvancedDropdowns() {
+  renderFilterDropdown({
+    ddId:      'ms-version-dropdown',
+    lblId:     'ms-version-label',
+    options:   getVersionsInUse().map(v => ({ value: v.id, label: v.label })),
+    selected:  S.filters.versions,
+    toggleFn:  'toggleVersion',
+    emptyKey:  'allver',
+    summaryFn: () => S.filters.versions.length
+      ? S.filters.versions.map(id => VERSIONS.find(v => v.id === id)?.label || id).join(', ')
+      : i('allver'),
+  });
+  renderFilterDropdown({
+    ddId:      'ms-country-dropdown',
+    lblId:     'ms-country-label',
+    options:   getCountriesInUse().map(c => ({ value: c, label: c })),
+    selected:  S.filters.countries,
+    toggleFn:  'toggleCountry',
+    emptyKey:  'allcountries',
+    summaryFn: () => S.filters.countries.length ? S.filters.countries.join(', ') : i('allcountries'),
+  });
+  renderTagsDropdown();
 }
 
 function renderAdvancedChips() {
   const row = document.getElementById('advanced-chips-row');
   if (!row) return;
-
-  const chips = [];
-
-  S.filters.versions.forEach(vId => {
-    const v = getVer(vId);
-    chips.push(`<span class="adv-chip chip-version">${v?.label || vId}
-      <button onclick="toggleVersion('${vId}')" aria-label="Remove">×</button></span>`);
-  });
-
-  S.filters.countries.forEach(c => {
-    chips.push(`<span class="adv-chip chip-country">${c}
-      <button onclick="toggleCountry('${c}')" aria-label="Remove">×</button></span>`);
-  });
-
-  if (S.filters.freeOnly) {
-    chips.push(`<span class="adv-chip chip-free">Free
-      <button onclick="toggleFreeOnly()" aria-label="Remove">×</button></span>`);
-  }
-
-  S.filters.tags.forEach(tag => {
-    chips.push(`<span class="adv-chip chip-tag">${tag}
-      <button onclick="toggleTag('${tag}')" aria-label="Remove">×</button></span>`);
-  });
-
+  const chips = [
+    ...S.filters.versions.map(vId =>
+      makeChip(VERSIONS.find(v => v.id === vId)?.label || vId, `toggleVersion('${vId}')`, 'chip-version')),
+    ...S.filters.countries.map(c =>
+      makeChip(c, `toggleCountry('${c}')`, 'chip-country')),
+    ...(S.filters.freeOnly ? [makeChip('Free', 'toggleFreeOnly()', 'chip-free')] : []),
+    ...S.filters.tags.map(t =>
+      makeChip(t, `toggleTag('${t}')`, 'chip-tag')),
+  ];
   row.innerHTML = chips.join('');
   row.style.display = chips.length ? 'flex' : 'none';
 }
@@ -234,31 +153,19 @@ function renderAdvancedChips() {
 // ── Result count ──────────────────────────────────────────
 
 function updateResultCount(n) {
-  const el = document.getElementById('results-count');
-  const isFiltering = S.filters.search || S.filters.versions.length > 0 ||
-                      S.filters.freeOnly || S.filters.countries.length > 0 ||
-                      S.filters.tags.length > 0;
-  if (isFiltering) {
-    el.textContent = i('found')(n);
-    el.classList.add('vis');
-  } else {
-    el.classList.remove('vis');
-  }
+  const el          = document.getElementById('results-count');
+  const isFiltering = S.filters.search || activeFilterCount() > 0;
+  el.textContent    = isFiltering ? i('found')(n) : '';
+  el.classList.toggle('vis', isFiltering);
 }
 
 // ── Columns menu ──────────────────────────────────────────
 
 function renderColumnsMenu() {
-  const labels = {
-    developer: i('dev'),
-    version:   i('ver'),
-    year:      i('yr'),
-    country:   i('country'),
-    tags:      i('tags'),
-  };
+  const labels = { developer: i('dev'), version: i('ver'), year: i('yr'), country: i('country'), tags: i('tags') };
   document.getElementById('columns-menu').innerHTML =
-    Object.keys(labels)
-      .map(k => `<label><input type="checkbox" ${S.cols[k] ? 'checked' : ''} onchange="toggleColumn('${k}')"/> ${labels[k]}</label>`)
+    Object.entries(labels)
+      .map(([k, label]) => `<label><input type="checkbox" ${S.cols[k] ? 'checked' : ''} onchange="toggleColumn('${k}')"/> ${label}</label>`)
       .join('');
 }
 
@@ -267,16 +174,14 @@ function renderColumnsMenu() {
 function updateAdminBar() {
   const bar = document.getElementById('admin-bar');
   bar.style.display = S.isAdmin ? 'flex' : 'none';
-  if (S.isAdmin && S.session) {
-    setText('admin-email-label', S.session.user.email);
-  }
+  if (S.isAdmin && S.session) setText('admin-email-label', S.session.user.email);
 }
 
 // ── Table ─────────────────────────────────────────────────
 
 function renderTableHeaders() {
   const cols = [
-    { id: 'title',     label: i('title'),   cls: 'col-title sortable' },
+    { id: 'title',     label: i('title'),   cls: 'col-title sortable'  },
     S.cols.developer ? { id: 'developer', label: i('dev'),     cls: 'sortable'    } : null,
     S.cols.version   ? { id: 'version',   label: i('ver'),     cls: ''            } : null,
     S.cols.year      ? { id: 'year',      label: i('yr'),      cls: 'sortable'    } : null,
@@ -287,93 +192,76 @@ function renderTableHeaders() {
   ].filter(Boolean);
 
   document.getElementById('table-header-row').innerHTML = cols.map(c => {
-    const sortable   = c.cls.includes('sortable');
-    const activeSort = S.sort.col === c.id;
-    const sortCls    = activeSort ? (S.sort.dir === 'asc' ? 'sort-asc' : 'sort-desc') : '';
-    const arrow      = (activeSort && S.sort.dir === 'asc') ? '↓' : '↑';
+    const sortable = c.cls.includes('sortable');
+    const active   = S.sort.col === c.id;
+    const arrow    = active && S.sort.dir === 'asc' ? '↓' : '↑';
+    const sortCls  = active ? (S.sort.dir === 'asc' ? 'sort-asc' : 'sort-desc') : '';
     return `<th class="${c.cls} ${sortCls}" ${sortable ? `onclick="sortBy('${c.id}')"` : ''}>
       ${c.label}${sortable ? `<span class="sort-indicator">${arrow}</span>` : ''}
     </th>`;
   }).join('');
 }
 
+function gameRow(g) {
+  return `<tr onclick="openGameModal('${g.id}')" onmouseenter="showTooltip(event,'${g.ss || ''}')" onmouseleave="hideTooltip()">
+    <td class="col-title">${g.title}</td>
+    ${S.cols.developer ? `<td class="col-developer">${g.developer}</td>` : ''}
+    ${S.cols.version   ? `<td><div class="badge-wrapper">${versionBadge(g.vId)}</div></td>` : ''}
+    ${S.cols.year      ? `<td class="col-year">${g.year}</td>` : ''}
+    ${S.cols.country   ? `<td class="col-country">${g.country}</td>` : ''}
+    ${S.cols.tags      ? `<td><div class="badge-wrapper">${g.tags.map(tagBadge).join('')}</div></td>` : ''}
+    <td class="col-download"><div class="badge-wrapper">${downloadBadge(g)}</div></td>
+    ${S.isAdmin ? `<td><div class="action-buttons">${adminBtns(g.id, true)}</div></td>` : ''}
+  </tr>`;
+}
+
 function renderTable(games) {
   const tbody = document.getElementById('table-body');
-
-  if (games.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10">
-      <div class="empty-state"><div class="empty-icon">🔍</div><p>${i('filters')} — nenhum resultado</p></div>
-    </td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = games.map(g => {
-    const adminCols = S.isAdmin
-      ? `<td><div class="action-buttons">
-          <button class="action-button"              onclick="event.stopPropagation();openEdit('${g.id}')" title="${i('editgame')}">✏️</button>
-          <button class="action-button delete-button" onclick="event.stopPropagation();delGame('${g.id}')"  title="Delete">🗑️</button>
-        </div></td>`
-      : '';
-
-    return `<tr onclick="openGameModal('${g.id}')" onmouseenter="showTooltip(event,'${g.ss || ''}')" onmouseleave="hideTooltip()">
-      <td class="col-title">${g.title}</td>
-      ${S.cols.developer ? `<td class="col-developer">${g.developer}</td>` : ''}
-      ${S.cols.version   ? `<td><div class="badge-wrapper">${versionBadge(g.vId)}</div></td>` : ''}
-      ${S.cols.year      ? `<td class="col-year">${g.year}</td>` : ''}
-      ${S.cols.country   ? `<td class="col-country">${g.country}</td>` : ''}
-      ${S.cols.tags      ? `<td><div class="badge-wrapper">${g.tags.map(t => tagBadge(t)).join('')}</div></td>` : ''}
-      <td class="col-download"><div class="badge-wrapper">${downloadBadge(g)}</div></td>
-      ${adminCols}
-    </tr>`;
-  }).join('');
+  tbody.innerHTML = games.length
+    ? games.map(gameRow).join('')
+    : `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div></td></tr>`;
 }
 
 // ── Cards ─────────────────────────────────────────────────
 
-function renderCards(games) {
-  const grid = document.getElementById('cards-grid');
-  let html   = '';
-
-  if (S.isAdmin) {
-    html += `<div class="card-add-button" onclick="openEdit(null)" role="button" tabindex="0" aria-label="${i('addgame')}">
-      <div class="card-add-content">
-        <span class="add-icon">＋</span>
-        <span class="add-label">${i('addgame')}</span>
+function gameCard(g, idx) {
+  const ss = g.ss
+    ? `<img class="card-screenshot" src="${g.ss}" alt="${g.title}" loading="lazy"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  return `<div class="card" style="animation-delay:${Math.min(idx * 25, 200)}ms" onclick="openGameModal('${g.id}')">
+    ${ss}
+    <div class="card-screenshot-fallback" style="${g.ss ? 'display:none' : 'display:flex'}" data-i18n="noss"></div>
+    <div class="card-body">
+      <div class="card-title">${g.title}</div>
+      <div class="card-developer">
+        <span class="card-dev-name">${g.developer}</span>
+        <span class="card-dev-meta"> · ${g.year} · ${g.country}</span>
       </div>
-    </div>`;
-  }
+      <div class="card-tags badge-wrapper">${g.tags.slice(0, 3).map(tagBadge).join('')}</div>
+    </div>
+    <div class="card-footer">
+      <div class="badge-wrapper">${versionBadge(g.vId)}</div>
+      <div style="display:flex;align-items:center;gap:5px">
+        ${adminBtns(g.id, true)}${downloadBadge(g)}
+      </div>
+    </div>
+  </div>`;
+}
 
-  if (games.length === 0) {
-    html += `<div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div>`;
-  } else {
-    html += games.map((g, idx) => {
-      const ssImg = g.ss
-        ? `<img class="card-screenshot" src="${g.ss}" alt="${g.title}" loading="lazy"
-              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-        : '';
-      const ssPhStyle = g.ss ? 'display:none' : 'display:flex';
-      const adminBtns = S.isAdmin
-        ? `<button class="action-button"              onclick="event.stopPropagation();openEdit('${g.id}')" title="${i('editgame')}">✏️</button>
-           <button class="action-button delete-button" onclick="event.stopPropagation();delGame('${g.id}')"  title="Delete">🗑️</button>`
-        : '';
-
-      return `<div class="card" style="animation-delay:${Math.min(idx * 25, 200)}ms" onclick="openGameModal('${g.id}')">
-        ${ssImg}
-        <div class="card-screenshot-fallback" style="${ssPhStyle}">${i('noss')}</div>
-        <div class="card-body">
-          <div class="card-title">${g.title}</div>
-          <div class="card-developer"><span class="card-dev-name">${g.developer}</span><span class="card-dev-meta"> · ${g.year} · ${g.country}</span></div>
-          <div class="card-tags badge-wrapper">${g.tags.slice(0, 3).map(t => tagBadge(t)).join('')}</div>
+function renderCards(games) {
+  const addBtn = S.isAdmin
+    ? `<div class="card-add-button" onclick="openEdit(null)" role="button" tabindex="0">
+        <div class="card-add-content">
+          <span class="add-icon">＋</span>
+          <span class="add-label" data-i18n="addgame"></span>
         </div>
-        <div class="card-footer">
-          <div class="badge-wrapper">${versionBadge(g.vId)}</div>
-          <div style="display:flex;align-items:center;gap:5px">${adminBtns}${downloadBadge(g)}</div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  grid.innerHTML = html;
+      </div>`
+    : '';
+  const empty = games.length === 0
+    ? `<div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div>`
+    : games.map(gameCard).join('');
+  document.getElementById('cards-grid').innerHTML = addBtn + empty;
 }
 
 // ── Game Detail Modal ─────────────────────────────────────
@@ -384,14 +272,11 @@ function openGameModal(gameId) {
 
   const ssImg = document.getElementById('game-detail-screenshot');
   const ssFb  = document.getElementById('game-detail-screenshot-fallback');
-  if (g.ss) {
-    ssImg.src = g.ss; ssImg.style.display = 'block'; ssFb.style.display = 'none';
-  } else {
-    ssImg.style.display = 'none'; ssFb.style.display = 'flex'; ssFb.textContent = i('noss');
-  }
+  if (g.ss) { ssImg.src = g.ss; ssImg.style.display = 'block'; ssFb.style.display = 'none'; }
+  else       { ssImg.style.display = 'none'; ssFb.style.display = 'flex'; ssFb.textContent = i('noss'); }
 
-  document.getElementById('game-detail-title').textContent = g.title;
-  document.getElementById('game-detail-id').textContent    = `#${g.id}`;
+  setText('game-detail-title', g.title);
+  setText('game-detail-id',    `#${g.id}`);
 
   document.getElementById('game-detail-meta').innerHTML = `
     <div class="game-detail-meta-row">
@@ -401,18 +286,17 @@ function openGameModal(gameId) {
       <span class="gd-sep">·</span>
       <span class="gd-country">${g.country || 'Unknown'}</span>
     </div>
-    <div class="gd-version">${versionBadge(g.vId)}</div>`;
+    <div>${versionBadge(g.vId)}</div>`;
 
   document.getElementById('game-detail-tags').innerHTML =
-    `<div class="badge-wrapper">${g.tags.map(t => tagBadge(t)).join('')}</div>`;
+    `<div class="badge-wrapper">${g.tags.map(tagBadge).join('')}</div>`;
 
-  let footer = `<div>${downloadBadge(g)}</div>`;
-  if (S.isAdmin) {
-    footer += `<div class="action-buttons">
-      <button class="action-button" onclick="closeModal('game-detail-modal');openEdit('${g.id}')" title="${i('editgame')}">✏️</button>
-      <button class="action-button delete-button" onclick="closeModal('game-detail-modal');delGame('${g.id}')" title="Delete">🗑️</button>
-    </div>`;
-  }
-  document.getElementById('game-detail-footer').innerHTML = footer;
+  document.getElementById('game-detail-footer').innerHTML =
+    `<div>${downloadBadge(g)}</div>
+     ${S.isAdmin ? `<div class="action-buttons">
+       <button class="action-button" onclick="closeModal('game-detail-modal');openEdit('${g.id}')" title="${i('editgame')}">✏️</button>
+       <button class="action-button delete-button" onclick="closeModal('game-detail-modal');delGame('${g.id}')" title="Delete">🗑️</button>
+     </div>` : ''}`;
+
   openModal('game-detail-modal');
 }

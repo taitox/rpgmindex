@@ -1,4 +1,3 @@
-/* jshint esversion: 6 */
 'use strict';
 
 let S = {
@@ -9,6 +8,7 @@ let S = {
   loading:      true,
   session:      null,
   advancedOpen: false,
+  openDropdown: null,   // which ms-*-dropdown is open; replaces _openDropdown in ui.js
 
   sort: { col: 'title', dir: 'asc' },
 

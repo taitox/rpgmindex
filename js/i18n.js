@@ -1,4 +1,3 @@
-/* jshint esversion: 6 */
 'use strict';
 
 const T = {
@@ -18,33 +17,31 @@ const T = {
     loading:  'Carregando…',
     advsearch: 'Busca Avançada',
 
-    title:   'Título',      dev:     'Dev',          ver:  'Versão',
-    yr:      'Ano',         country: 'País',          tags: 'Tags',
-    dl:      'Download',    unavail: '❌ Lost Media',
+    title:   'Título',  dev:     'Dev',   ver:  'Versão',
+    yr:      'Ano',     country: 'País',  tags: 'Tags',
+    dl:      'Download', na:     'Lost Media',
     noss:    'Sem screenshot disponível.',
 
     adminlogin: 'Login Admin',
     adminsub:   'Acesso restrito ao painel de administração',
-    email:      'E-mail',   pass:     'Senha',
-    login:      'Entrar',   cancel:   'Cancelar',
-    logout:     'Sair',     addgame:  '+ Adicionar Jogo',
-    editgame:   'Editar Jogo',
-    save:       'Salvar',   actions:  'Ações',
-    sortby:     'Ordenar por',
-    adminmode:  'Modo Admin',
+    email:  'E-mail',  pass:   'Senha',
+    login:  'Entrar',  cancel: 'Cancelar',
+    logout: 'Sair',    addgame: '+ Adicionar Jogo',
+    editgame: 'Editar Jogo',
+    save: 'Salvar',  actions: 'Ações',
+    sortby: 'Ordenar por',  adminmode: 'Modo Admin',
     confirmdel: 'Excluir este jogo?',
 
-    edtitle:   'Título',           eddev:     'Desenvolvedor',
-    edver:     'Versão RPG Maker', edyr:      'Ano',
-    edss:      'Screenshot',       edurl:     'URL de Download',
-    eddl:      'Download',         edtags:    'Tags',
+    edtitle: 'Título',          eddev:     'Desenvolvedor',
+    edver:   'Versão RPG Maker', edyr:      'Ano',
+    edss:    'Screenshot',       edurl:     'URL de Download',
+    eddl:    'Download',         edtags:    'Tags',
     edcountry: 'País de Origem',
-    avail:     'Disponível',       na:        'Lost Media',
-    ssurl:     'URL',              ssupload:  'Enviar Arquivo',
+    avail:   'Disponível',       na2:       'Lost Media',
+    ssurl:   'URL',              ssupload:  'Enviar Arquivo',
     countryph: 'Digite ou selecione um país…',
     tagph:     'Selecionar ou adicionar tag…',
     newtag:    'Nova tag — será adicionada ao salvar',
-
     tagsrequired: 'Selecione pelo menos uma tag.',
 
     confirmclear:    'Limpar busca?',
@@ -77,33 +74,31 @@ const T = {
     loading:  'Loading…',
     advsearch: 'Advanced Search',
 
-    title:   'Title',       dev:     'Developer',     ver:  'Version',
-    yr:      'Year',        country: 'Country',        tags: 'Tags',
-    dl:      'Download',    unavail: '❌ Lost Media',
+    title:   'Title',  dev:     'Developer',  ver:  'Version',
+    yr:      'Year',   country: 'Country',    tags: 'Tags',
+    dl:      'Download', na:    'Lost Media',
     noss:    'No screenshot available.',
 
     adminlogin: 'Admin Login',
     adminsub:   'Restricted access to admin panel',
-    email:      'Email',    pass:     'Password',
-    login:      'Login',    cancel:   'Cancel',
-    logout:     'Logout',   addgame:  '+ Add Game',
-    editgame:   'Edit Game',
-    save:       'Save',     actions:  'Actions',
-    sortby:     'Sort by',
-    adminmode:  'Admin Mode',
+    email:  'Email',   pass:   'Password',
+    login:  'Login',   cancel: 'Cancel',
+    logout: 'Logout',  addgame: '+ Add Game',
+    editgame: 'Edit Game',
+    save: 'Save',  actions: 'Actions',
+    sortby: 'Sort by',  adminmode: 'Admin Mode',
     confirmdel: 'Delete this game?',
 
-    edtitle:   'Title',              eddev:     'Developer',
-    edver:     'RPG Maker Version',  edyr:      'Year',
-    edss:      'Screenshot',         edurl:     'Download URL',
-    eddl:      'Download',           edtags:    'Tags',
+    edtitle: 'Title',              eddev:     'Developer',
+    edver:   'RPG Maker Version',  edyr:      'Year',
+    edss:    'Screenshot',         edurl:     'Download URL',
+    eddl:    'Download',           edtags:    'Tags',
     edcountry: 'Country of Origin',
-    avail:     'Available',          na:        'Lost Media',
-    ssurl:     'URL',                ssupload:  'Upload File',
+    avail:   'Available',          na2:       'Lost Media',
+    ssurl:   'URL',                ssupload:  'Upload File',
     countryph: 'Type or select a country…',
     tagph:     'Select or add a tag…',
     newtag:    'New tag — will be added on save',
-
     tagsrequired: 'Select at least one tag.',
 
     confirmclear:    'Clear search?',
@@ -121,6 +116,4 @@ const T = {
   },
 };
 
-function i(key) {
-  return T[S.lang][key] ?? key;
-}
+function i(key) { return T[S.lang][key] ?? key; }
