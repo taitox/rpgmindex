@@ -1,6 +1,11 @@
 @font-face {
-  font-family: 'Jacquard12';
-  src: url('./fonts/Jacquard12-Regular.ttf') format('truetype');
+  font-family: 'Alkhemikal';
+  src: url('./fonts/Alkhemikal.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Orange Kid';
+  src: url('./fonts/Orange Kid.ttf') format('truetype');
   font-display: swap;
 }
 
@@ -99,7 +104,8 @@
   --radius-lg: 16px;
 
   /* ---- FONTS ---- */
-  --font-display: 'Jacquard12', sans-serif;
+  --font-display: 'Alkhemikal', sans-serif;
+  --font-title:   'Orange Kid', sans-serif;
   --font-ui:      'Nunito', sans-serif;
 
   /* ---- BACKGROUND GRID ---- */
