@@ -8,10 +8,11 @@ function onSearch(value) {
   _searchTimer = setTimeout(() => { S.filters.search = value; renderAll(); }, 200);
 }
 
-// Immediately sets search to a dev name. Called by clicking a developer cell.
-function searchDev(name) {
-  S.filters.search = name;
-  document.getElementById('search').value = name;
+// Sets the search input and triggers a render immediately.
+// Used by clicking developer names, years, and country cells.
+function searchBy(term) {
+  S.filters.search = String(term);
+  document.getElementById('search').value = String(term);
   renderAll();
 }
 
@@ -31,21 +32,20 @@ function closeAdvancedPanel() {
   renderAll();
 }
 
-// Pure state mutation — callers decide when to render.
+// Pure state mutation — no render. Callers decide when to render.
 function resetAdvancedFilters() {
   S.filters.versions  = [];
   S.filters.countries = [];
-  S.filters.freeOnly  = false;
   S.filters.tags      = [];
 }
 
 // Public: reset + render. Called by the Clear All button.
 function clearAdvancedFilters() { resetAdvancedFilters(); renderAll(); }
 
-// Called by confirm modal "Return" — just dismisses the modal, panel stays open.
+// Confirm modal "Return" — dismisses the modal only; panel stays open.
 function keepAndClose() { closeModal('confirm-clear-modal'); }
 
-// Called by confirm modal "Abandon" — clears everything and closes the panel.
+// Confirm modal "Abandon" — clears everything and closes the panel.
 function confirmClearClose() {
   resetAdvancedFilters();
   S.advancedOpen = false;
@@ -54,19 +54,13 @@ function confirmClearClose() {
   renderAll();
 }
 
-// Toggle a multi-select dropdown. ddId is the full element ID (e.g. 'ms-version-dropdown').
+// Toggle a multi-select dropdown. ddId is the full element ID.
 function toggleDropdown(ddId) {
   S.openDropdown = S.openDropdown === ddId ? null : ddId;
   renderAdvancedDropdowns();
 }
 
 // ── Filter toggles ───────────────────────────────────────
-
-function toggleFreeOnly() {
-  S.filters.freeOnly = !S.filters.freeOnly;
-  S.advancedOpen = true;
-  renderAll();
-}
 
 function toggleVersion(vId) {
   toggleInArray(S.filters.versions, vId);
@@ -79,9 +73,8 @@ function toggleCountry(country) {
   renderAll();
 }
 
+// All tags are uniform — no special Free routing.
 function toggleTag(tag) {
-  // 'Free' always routes to freeOnly for consistent filter logic
-  if (tag === 'Free') { toggleFreeOnly(); return; }
   toggleInArray(S.filters.tags, tag);
   S.advancedOpen = true;
   renderAll();
@@ -89,7 +82,6 @@ function toggleTag(tag) {
 
 function setTagMode(mode) { S.filters.tagMode = mode; renderAll(); }
 
-// Clears everything including the text search input.
 function clearFilters() {
   S.filters.search = '';
   document.getElementById('search').value = '';
@@ -157,7 +149,6 @@ function openModal(id)  { document.getElementById(id).classList.add('open');    
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
 // ── Tooltip ──────────────────────────────────────────────
-// Receives the hovered <tr> element; reads ss and title from data attributes.
 
 function showTooltip(e, row) {
   if (window.innerWidth < 800) return;
@@ -211,14 +202,11 @@ document.getElementById('login-password')
   .addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 document.addEventListener('click', e => {
-  // Close columns menu
   const colBtn  = document.getElementById('columns-button');
   const colMenu = document.getElementById('columns-menu');
   if (colBtn && colMenu && !colBtn.contains(e.target) && !colMenu.contains(e.target)) {
     colMenu.classList.remove('open');
   }
-
-  // Close advanced search dropdowns
   if (S.openDropdown !== null) {
     const panel = document.getElementById('advanced-panel');
     if (panel && !panel.contains(e.target)) {
@@ -226,8 +214,6 @@ document.addEventListener('click', e => {
       renderAdvancedDropdowns();
     }
   }
-
-  // Close edit tag dropdown
   const editMs = document.getElementById('edit-tag-ms');
   const editDd = document.getElementById('edit-tag-dropdown');
   if (editMs && editDd && !editMs.contains(e.target)) editDd.classList.remove('open');

@@ -36,16 +36,13 @@ function syncI18n() {
   document.querySelectorAll('[data-i18n-ph]')
     .forEach(el => { el.placeholder = i(el.dataset.i18nPh); });
 
-  // Special cases
   document.getElementById('columns-button').textContent = `${i('cols')} ▾`;
   document.getElementById('edit-game-version').innerHTML =
     VERSIONS.map(v => `<option value="${v.id}">${v.label}</option>`).join('');
 
-  // Language select
   const langSel = document.getElementById('lang-select');
   if (langSel) langSel.value = S.lang;
 
-  // Toggle states
   document.getElementById('theme-light-button').classList.toggle('on', S.theme === 'light');
   document.getElementById('theme-dark-button').classList.toggle('on',  S.theme === 'dark');
   document.getElementById('view-compact').classList.toggle('on', S.view === 'compact');
@@ -68,7 +65,6 @@ function renderAdvancedSearch() {
 
   if (!S.advancedOpen) return;
 
-  document.getElementById('adv-free-button')?.classList.toggle('on', S.filters.freeOnly);
   document.getElementById('adv-mode-or')?.classList.toggle('on',  S.filters.tagMode === 'or');
   document.getElementById('adv-mode-and')?.classList.toggle('on', S.filters.tagMode === 'and');
 
@@ -76,6 +72,7 @@ function renderAdvancedSearch() {
   renderAdvancedChips();
 }
 
+// Renders a standard multi-select dropdown (versions and countries use this).
 function renderFilterDropdown({ ddId, lblId, options, selected, toggleFn, emptyKey, summaryFn }) {
   const dd = document.getElementById(ddId);
   const lb = document.getElementById(lblId);
@@ -90,23 +87,20 @@ function renderFilterDropdown({ ddId, lblId, options, selected, toggleFn, emptyK
   if (lb) lb.textContent = summaryFn();
 }
 
+// Tags dropdown — all tags treated uniformly, no Free special-casing.
 function renderTagsDropdown() {
   const dd = document.getElementById('ms-tags-dropdown');
   const lb = document.getElementById('ms-tags-label');
   if (!dd) return;
   dd.innerHTML = TAGS.map(t => {
-    const isFree = t.name === 'Free';
-    const sel  = isFree ? S.filters.freeOnly : S.filters.tags.includes(t.name);
-    const fn   = isFree ? 'toggleFreeOnly()' : `toggleTag('${t.name}')`;
-    return `<div class="ms-option ${sel ? 'selected' : ''}" onclick="${fn}">
+    const sel = S.filters.tags.includes(t.name);
+    return `<div class="ms-option ${sel ? 'selected' : ''}" onclick="toggleTag('${t.name}')">
       <span class="ms-check">${sel ? '✓' : ''}</span>${t.name}
     </div>`;
   }).join('') || `<div class="ms-empty">${i('alltags')}</div>`;
   dd.classList.toggle('open', S.openDropdown === 'ms-tags-dropdown');
-  if (lb) {
-    const active = [...(S.filters.freeOnly ? ['Free'] : []), ...S.filters.tags];
-    lb.textContent = active.length ? active.join(', ') : i('alltags');
-  }
+  // Label is static — always shows "Filter tags…" regardless of selection
+  if (lb) lb.textContent = i('filtertags');
 }
 
 function renderAdvancedDropdowns() {
@@ -117,9 +111,8 @@ function renderAdvancedDropdowns() {
     selected:  S.filters.versions,
     toggleFn:  'toggleVersion',
     emptyKey:  'allver',
-    summaryFn: () => S.filters.versions.length
-      ? S.filters.versions.map(id => VERSIONS.find(v => v.id === id)?.label || id).join(', ')
-      : i('allver'),
+    // Label is static — always shows "Filter versions…" regardless of selection
+    summaryFn: () => i('filterversions'),
   });
   renderFilterDropdown({
     ddId:      'ms-country-dropdown',
@@ -141,7 +134,6 @@ function renderAdvancedChips() {
       makeChip(VERSIONS.find(v => v.id === vId)?.label || vId, `toggleVersion('${vId}')`, 'chip-version')),
     ...S.filters.countries.map(c =>
       makeChip(c, `toggleCountry('${c}')`, 'chip-country')),
-    ...(S.filters.freeOnly ? [makeChip('Free', 'toggleFreeOnly()', 'chip-free')] : []),
     ...S.filters.tags.map(t =>
       makeChip(t, `toggleTag('${t}')`, 'chip-tag')),
   ];
@@ -202,20 +194,19 @@ function renderTableHeaders() {
 }
 
 function gameRow(g) {
-  const escapedTitle = (g.title || '').replace(/"/g, '&quot;');
-  const escapedDev   = (g.developer || '').replace(/"/g, '&quot;');
+  const esc = s => (s || '').replace(/"/g, '&quot;');
   return `<tr
     data-ss="${g.ss || ''}"
-    data-title="${escapedTitle}"
+    data-title="${esc(g.title)}"
     onclick="openGameModal('${g.id}')"
     onmouseenter="showTooltip(event, this)"
     onmouseleave="hideTooltip()">
     <td class="col-title">${g.title}</td>
-    ${S.cols.developer ? `<td class="col-developer col-dev-link" data-dev="${escapedDev}" onclick="event.stopPropagation();searchDev(this.dataset.dev)">${g.developer}</td>` : ''}
+    ${S.cols.developer ? `<td class="col-developer">${devLinks(g.developer)}</td>` : ''}
     ${S.cols.version   ? `<td><div class="badge-wrapper">${versionBadge(g.vId)}</div></td>` : ''}
-    ${S.cols.year      ? `<td class="col-year">${g.year}</td>` : ''}
-    ${S.cols.country   ? `<td class="col-country">${g.country}</td>` : ''}
-    ${S.cols.tags      ? `<td><div class="badge-wrapper">${g.tags.map(tagBadge).join('')}</div></td>` : ''}
+    ${S.cols.year      ? `<td class="col-year col-search-link" data-search="${g.year}" onclick="event.stopPropagation();searchBy(this.dataset.search)">${g.year}</td>` : ''}
+    ${S.cols.country   ? `<td class="col-country col-search-link" data-search="${esc(g.country)}" onclick="event.stopPropagation();searchBy(this.dataset.search)">${g.country}</td>` : ''}
+    ${S.cols.tags      ? `<td class="col-tags"><div class="badge-wrapper">${g.tags.map(tagBadge).join('')}</div></td>` : ''}
     <td class="col-download"><div class="badge-wrapper">${downloadBadge(g)}</div></td>
     ${S.isAdmin ? `<td><div class="action-buttons">${adminBtns(g.id, true)}</div></td>` : ''}
   </tr>`;
@@ -230,11 +221,11 @@ function renderTable(games) {
 // ── Cards ─────────────────────────────────────────────────
 
 function gameCard(g, idx) {
-  const ss        = g.ss ? `<img class="card-screenshot" src="${g.ss}" alt="${g.title}" loading="lazy"
+  const ss      = g.ss ? `<img class="card-screenshot" src="${g.ss}" alt="${g.title}" loading="lazy"
     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
-  const visible   = g.tags.slice(0, 4);
-  const extra     = g.tags.length - 4;
-  const tagHtml   = visible.map(tagBadge).join('') +
+  const visible = g.tags.slice(0, 4);
+  const extra   = g.tags.length - 4;
+  const tagHtml = visible.map(tagBadge).join('') +
     (extra > 0 ? `<span class="badge badge-tag" onclick="event.stopPropagation();openGameModal('${g.id}')" role="button" tabindex="0">${extra}+ tags</span>` : '');
 
   return `<div class="card" style="animation-delay:${Math.min(idx * 25, 200)}ms" onclick="openGameModal('${g.id}')">
@@ -242,17 +233,12 @@ function gameCard(g, idx) {
     <div class="card-screenshot-fallback" style="${g.ss ? 'display:none' : 'display:flex'}" data-i18n="noss"></div>
     <div class="card-body">
       <div class="card-title">${g.title}</div>
-      <div class="card-developer">
-        <span class="card-dev-name">${g.developer}</span>
-        <span class="card-dev-meta"> · ${g.year} · ${g.country}</span>
-      </div>
+      <div class="card-developer">${devLinks(g.developer)}<span class="card-dev-meta"> · ${g.year} · ${g.country}</span></div>
       <div class="card-tags badge-wrapper">${tagHtml}</div>
     </div>
     <div class="card-footer">
       <div class="badge-wrapper">${versionBadge(g.vId)}</div>
-      <div style="display:flex;align-items:center;gap:5px">
-        ${adminBtns(g.id, true)}${downloadBadge(g)}
-      </div>
+      <div style="display:flex;align-items:center;gap:5px">${adminBtns(g.id, true)}${downloadBadge(g)}</div>
     </div>
   </div>`;
 }
@@ -301,26 +287,26 @@ function openGameModal(gameId) {
 }
 
 function _renderModalMeta(g) {
-  const escapedDev = (g.developer || '').replace(/"/g, '&quot;');
+  const esc = s => (s || '').replace(/"/g, '&quot;');
   document.getElementById('game-detail-meta').innerHTML = `
     <div class="game-detail-meta-row">
-      <span class="gd-dev col-dev-link" data-dev="${escapedDev}"
-            onclick="searchDev(this.dataset.dev)">${g.developer || '—'}</span>
+      <span class="gd-dev">${devLinks(g.developer)}</span>
       <span class="gd-sep">·</span>
-      <span class="gd-year">${g.year || '—'}</span>
+      <span class="gd-year col-search-link" data-search="${g.year}"
+            onclick="searchBy(this.dataset.search)">${g.year || '—'}</span>
       <span class="gd-sep">·</span>
-      <span class="gd-country">${g.country || 'Unknown'}</span>
-    </div>
-    <div>${versionBadge(g.vId)}</div>`;
+      <span class="gd-country col-search-link" data-search="${esc(g.country)}"
+            onclick="searchBy(this.dataset.search)">${g.country || 'Unknown'}</span>
+    </div>`;
 }
 
+// Version badge appears first in the tags row (same ordering logic as chips).
 function _renderModalTags(g) {
   document.getElementById('game-detail-tags').innerHTML =
-    `<div class="badge-wrapper">${g.tags.map(tagBadge).join('')}</div>`;
+    `<div class="badge-wrapper">${versionBadge(g.vId)}${g.tags.map(tagBadge).join('')}</div>`;
 }
 
-// Refreshes the interactive parts of the detail modal when filter state changes
-// while the modal is open (e.g. user clicks a tag badge inside the modal).
+// Refreshes interactive badge states in the detail modal when filters change.
 function refreshOpenModal() {
   if (!S.activeModalGameId) return;
   if (!document.getElementById('game-detail-modal')?.classList.contains('open')) return;

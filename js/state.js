@@ -8,18 +8,17 @@ let S = {
   loading:          true,
   session:          null,
   advancedOpen:     false,
-  openDropdown:     null,    // which ms-*-dropdown is open
-  activeModalGameId: null,   // game currently shown in detail modal; used to refresh badges on filter change
+  openDropdown:     null,
+  activeModalGameId: null,
 
   sort: { col: 'title', dir: 'asc' },
 
   filters: {
     search:   '',
     versions:  [],
-    freeOnly: false,
     countries: [],
     tags:     [],
-    tagMode:  'and',   // AND by default
+    tagMode:  'and',
   },
 
   cols: {

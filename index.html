@@ -29,7 +29,6 @@
     </div>
   </a>
   <div class="topbar-right">
-    <!-- Language: native select, options match i18n.js languages -->
     <select id="lang-select" class="lang-select" onchange="setLang(this.value)">
       <option value="en">🇺🇸 EN-US</option>
       <option value="pt" selected>🇧🇷 PT-BR</option>
@@ -45,7 +44,7 @@
   </div>
 </header>
 
-<!-- ADMIN BAR -->
+<!-- ADMIN BAR — sticky just below the topbar -->
 <div id="admin-bar">
   <span class="admin-bar-left">
     🔐 <span data-i18n="adminmode"></span> · <span id="admin-email-label"></span>
@@ -67,7 +66,7 @@
         <input class="search-input" id="search" type="search" data-i18n-ph="search" oninput="onSearch(this.value)">
       </div>
       <button class="button-base" id="advanced-search-button" onclick="toggleAdvancedSearch()"></button>
-      <!-- Cards sort — visible only in cards view (body.view-cards), hidden on mobile -->
+      <!-- Cards sort — visible only when body.view-cards; hidden on mobile -->
       <div class="sort-control" id="control-sort-wrapper">
         <span class="sort-prefix" data-i18n="sortby"></span>
         <select id="cards-sort" onchange="onCardSort(this.value)">
@@ -91,7 +90,7 @@
     </div>
   </div>
 
-  <!-- ADVANCED SEARCH PANEL -->
+  <!-- ADVANCED SEARCH PANEL — no label titles above inputs -->
   <div class="advanced-panel" id="advanced-panel">
     <div class="advanced-panel-header">
       <span class="advanced-panel-title" data-i18n="advsearch"></span>
@@ -100,7 +99,6 @@
     <div class="advanced-panel-body">
 
       <div class="adv-control">
-        <label class="adv-control-label" data-i18n="ver"></label>
         <div class="ms-wrapper">
           <button class="ms-trigger" onclick="toggleDropdown('ms-version-dropdown')">
             <span id="ms-version-label"></span><span class="ms-arrow">▾</span>
@@ -110,7 +108,6 @@
       </div>
 
       <div class="adv-control">
-        <label class="adv-control-label" data-i18n="country"></label>
         <div class="ms-wrapper">
           <button class="ms-trigger" onclick="toggleDropdown('ms-country-dropdown')">
             <span id="ms-country-label"></span><span class="ms-arrow">▾</span>
@@ -119,13 +116,7 @@
         </div>
       </div>
 
-      <div class="adv-control">
-        <label class="adv-control-label" data-i18n="freeonly"></label>
-        <button class="button-base" data-i18n="freeonly" id="adv-free-button" onclick="toggleFreeOnly()"></button>
-      </div>
-
       <div class="adv-control adv-control-tags">
-        <label class="adv-control-label" data-i18n="tags"></label>
         <div class="adv-tags-row">
           <div class="ms-wrapper">
             <button class="ms-trigger" onclick="toggleDropdown('ms-tags-dropdown')">
@@ -140,9 +131,8 @@
         </div>
       </div>
 
-      <!-- Clear all sits inline with the other controls -->
+      <!-- Clear all — inline at the same height as the dropdowns -->
       <div class="adv-control adv-control-clear">
-        <label class="adv-control-label">&nbsp;</label>
         <button class="clear-button" data-i18n="clearall" id="adv-clear-btn" onclick="clearAdvancedFilters()"></button>
       </div>
 
@@ -167,11 +157,11 @@
 
   <!-- CARDS VIEW -->
   <div id="cards-view">
-    <!-- Mobile-only sort toolbar (hidden on desktop) -->
+    <!-- Mobile-only sort bar -->
     <div class="cards-toolbar">
-      <div class="sort-control">
+      <div class="sort-control" style="flex:1">
         <span class="sort-prefix" data-i18n="sortby"></span>
-        <select id="cards-sort-mobile" onchange="onCardSort(this.value)" style="min-width:130px">
+        <select id="cards-sort-mobile" onchange="onCardSort(this.value)" style="flex:1">
           <option value="title">Título A→Z</option>
           <option value="title-d">Título Z→A</option>
           <option value="year">Ano ↑</option>
@@ -212,7 +202,7 @@
   </div>
 </div>
 
-<!-- CONFIRM ABANDON SEARCH MODAL — .no-click-close prevents accidental dismissal -->
+<!-- CONFIRM ABANDON SEARCH — .no-click-close prevents accidental dismissal -->
 <div class="modal-overlay no-click-close" id="confirm-clear-modal">
   <div class="modal-content">
     <div class="modal-title"    data-i18n="confirmclear"></div>
@@ -271,7 +261,6 @@
       </div>
       <div class="field">
         <label data-i18n="edyr"></label>
-        <!-- oninput enforces max 4 digits; regex in saveGame enforces 19xx/20xx -->
         <input id="edit-game-year" type="number" min="1900" max="2099" placeholder="AAAA"
                oninput="if(this.value.length>4)this.value=this.value.slice(0,4)"/>
         <div class="login-error" id="edit-year-error" style="display:none;text-align:left"></div>

@@ -2,28 +2,40 @@
 
 // ── Utility ───────────────────────────────────────────────
 
-// Toggle an item in an array in-place. Returns nothing — mutates arr.
 function toggleInArray(arr, item) {
   const idx = arr.indexOf(item);
   idx >= 0 ? arr.splice(idx, 1) : arr.push(item);
 }
 
-// Count all active advanced search filters.
 function activeFilterCount() {
-  return S.filters.versions.length + S.filters.countries.length +
-         (S.filters.freeOnly ? 1 : 0) + S.filters.tags.length;
+  return S.filters.versions.length + S.filters.countries.length + S.filters.tags.length;
+}
+
+// ── Developer string helpers ──────────────────────────────
+// A dev string like "lubuo; cornelius" is split on ";" so each
+// part becomes an independent clickable search link.
+
+function splitDev(dev) {
+  return (dev || '').split(';').map(s => s.trim()).filter(Boolean);
+}
+
+function devLinks(dev) {
+  const parts = splitDev(dev);
+  if (!parts.length) return '—';
+  return parts
+    .map(p => `<span class="dev-link" data-dev="${p.replace(/"/g, '&quot;')}"
+      onclick="event.stopPropagation();searchBy(this.dataset.dev)">${p}</span>`)
+    .join(' · ');
 }
 
 // ── Badge / chip builders ─────────────────────────────────
 
-// A single removable chip for the advanced search chip row.
 function makeChip(label, onclickExpr, cssClass) {
   return `<span class="adv-chip ${cssClass}">${label}
     <button onclick="${onclickExpr}" aria-label="Remove">×</button>
   </span>`;
 }
 
-// Edit/delete button pair for admin; returns '' for non-admin.
 function adminBtns(gameId, stopProp) {
   if (!S.isAdmin) return '';
   const stop = stopProp ? 'event.stopPropagation();' : '';
@@ -33,8 +45,12 @@ function adminBtns(gameId, stopProp) {
 
 function downloadBadge(g) {
   if (!g.url) return `<span class="badge badge-download badge-unavailable">❌ ${i('na')}</span>`;
-  return `<a href="${g.url}" target="_blank" rel="noopener" class="badge badge-download badge-free"
-     onclick="event.stopPropagation()">⬇ ${i('dl')}</a>`;
+  const isSteam = g.url.includes('store.steampowered.com');
+  const isItch  = g.url.includes('itch.io');
+  const label   = isSteam ? 'Steam' : isItch ? 'itch.io' : `⬇ ${i('dl')}`;
+  const cls     = isSteam ? 'badge-steam' : isItch ? 'badge-itchio' : 'badge-free';
+  return `<a href="${g.url}" target="_blank" rel="noopener"
+    class="badge badge-download ${cls}" onclick="event.stopPropagation()">${label}</a>`;
 }
 
 function versionBadge(vId) {
@@ -46,14 +62,14 @@ function versionBadge(vId) {
     role="button" tabindex="0">${v.label}</span>`;
 }
 
+// Free no longer has special-casing — all tags are treated uniformly.
 function tagBadge(tagName) {
-  const isFree   = tagName === 'Free';
-  const isActive = isFree ? S.filters.freeOnly : S.filters.tags.includes(tagName);
+  const isActive = S.filters.tags.includes(tagName);
   const def      = TAGS.find(t => t.name === tagName);
-  const cls      = `badge badge-tag ${isFree ? 'badge-tag-free' : ''} ${isActive ? 'active-filter' : ''}`.trimEnd();
-  const style    = (!isFree && def?.bg) ? `style="background:${def.bg};color:${def.tx};border-color:${def.bd}"` : '';
-  // toggleTag('Free') internally redirects to toggleFreeOnly — no need to special-case here
-  return `<span class="${cls}" ${style} onclick="event.stopPropagation();toggleTag('${tagName}')" role="button" tabindex="0">${tagName}</span>`;
+  const style    = def?.bg ? `style="background:${def.bg};color:${def.tx};border-color:${def.bd}"` : '';
+  return `<span class="badge badge-tag ${isActive ? 'active-filter' : ''}" ${style}
+    onclick="event.stopPropagation();toggleTag('${tagName}')"
+    role="button" tabindex="0">${tagName}</span>`;
 }
 
 // ── Filter pipeline ───────────────────────────────────────
@@ -71,7 +87,6 @@ function filterGames() {
           !g.tags.some(t => t.toLowerCase().includes(q))) return false;
     }
     if (f.versions.length  && !f.versions.includes(g.vId))      return false;
-    if (f.freeOnly         && !g.tags.includes('Free'))           return false;
     if (f.countries.length && !f.countries.includes(g.country))  return false;
     if (f.tags.length) {
       const ok = f.tagMode === 'or'
@@ -88,7 +103,6 @@ function filterGames() {
 function sortGames(games) {
   const { col, dir } = S.sort;
   const sign = dir === 'asc' ? 1 : -1;
-
   return [...games].sort((a, b) => {
     let av, bv;
     if      (col === 'developer') { av = a.developer.toLowerCase(); bv = b.developer.toLowerCase(); }

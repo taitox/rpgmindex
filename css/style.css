@@ -33,8 +33,8 @@ a { color: var(--color-primary-500); text-decoration: none; }
 /* ----- TOPBAR ----- */
 .topbar {
   position: sticky; top: 0; z-index: 100;
-  -webkit-backdrop-filter: blur(18px) saturate(1.5);
-  border-bottom: 1px solid var(--border-glass);
+  background: var(--surface-page);
+  border-bottom: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-md);
   padding: 9px 20px;
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -66,6 +66,7 @@ a { color: var(--color-primary-500); text-decoration: none; }
 /* ----- ADMIN BAR ----- */
 #admin-bar {
   display: none;
+  position: sticky; top: 56px; z-index: 99;
   background: linear-gradient(90deg, #0e1e5c, #1a3890);
   color: #fff;
   padding: 6px 20px;
@@ -744,3 +745,36 @@ td.col-dev-link:hover, .gd-dev.col-dev-link:hover {
 
 /* ===== ADV CONTROL CLEAR (inline with other controls) ===== */
 .adv-control-clear { margin-left: auto; justify-content: flex-end; }
+
+/* ===== TAGS CELL — fade + no badge shrink ===== */
+/* Badges keep their natural size; the cell masks overflow with a fade. */
+#table-view .badge-wrapper .badge { flex-shrink: 0; }
+
+td.col-tags {
+  /* mask-image fades the right edge instead of a hard clip */
+  mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+}
+
+/* ===== SEARCH LINK CELLS (year, country) ===== */
+.col-search-link { cursor: pointer; }
+.col-search-link:hover { color: var(--color-primary-500); }
+
+/* ===== DEV LINK ===== */
+.dev-link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+.dev-link:hover { color: var(--color-primary-500); }
+
+/* ===== STEAM / ITCH.IO DOWNLOAD BADGES ===== */
+.badge-steam  { background: #c2e0c6; color: #1a3d1f; border-color: #5ba85f; }
+.badge-itchio { background: #ffe0e0; color: #7a0000; border-color: #e05c5c; }
+.badge-steam:hover  { background: #a8d4ad; }
+.badge-itchio:hover { background: #ffc8c8; }
+
+/* ===== ADV CONTROL — no labels so vertically center ===== */
+.advanced-panel-body { align-items: center; }
+.adv-control-clear { margin-left: auto; }
