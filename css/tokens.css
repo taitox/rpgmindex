@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'Jacquard12';
+  src: url('./fonts/Jacquard12-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
 :root {
   /* ---- PRIMITIVE COLORS: Blue ---- */
   --color-primary-50:  #e0e8ff;
@@ -74,13 +80,13 @@
   --text-on-primary:    #ffffff;
   --text-table-header:  #1e2240;
 
-  /* ---- SHADOWS (unchanged values) ---- */
+  /* ---- SHADOWS ---- */
   --shadow-sm: 0 1px 4px rgba(40, 60, 180, .07);
   --shadow-md: 0 4px 22px rgba(40, 60, 180, .10);
   --shadow-dark-sm: 0 1px 5px rgba(0, 0, 0, .32);
   --shadow-dark-md: 0 5px 26px rgba(0, 0, 0, .42);
 
-  /* ---- GRADIENTS (unchanged) ---- */
+  /* ---- GRADIENTS ---- */
   --gradient-btn-light: linear-gradient(180deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.65) 45%, rgba(228,236,255,.76) 55%, rgba(212,224,255,.93) 100%);
   --gradient-btn-dark:  linear-gradient(180deg, rgba(90,130,255,.9) 0%, rgba(50,95,230,.86) 45%, rgba(35,80,215,.9) 55%, rgba(45,90,225,.95) 100%);
   --gradient-primary:   linear-gradient(180deg, #4a78e8 0%, #2852c8 100%);
@@ -93,16 +99,12 @@
   --radius-lg: 16px;
 
   /* ---- FONTS ---- */
-  --font-display: 'Jacquard 12', sans-serif;
+  --font-display: 'Jacquard12', sans-serif;
   --font-ui:      'Nunito', sans-serif;
 
-  /* ---- OTHER (grid pattern) ---- */
+  /* ---- BACKGROUND GRID ---- */
   --grid-pattern: rgba(140, 155, 210, 0.14);
 }
-
-
-
-
 
 [data-theme="dark"] {
   --color-neutral-0:   #161b2e;
