@@ -8,6 +8,13 @@ function onSearch(value) {
   _searchTimer = setTimeout(() => { S.filters.search = value; renderAll(); }, 200);
 }
 
+// Immediately sets search to a dev name. Called by clicking a developer cell.
+function searchDev(name) {
+  S.filters.search = name;
+  document.getElementById('search').value = name;
+  renderAll();
+}
+
 // ── Advanced Search Panel ────────────────────────────────
 
 function toggleAdvancedSearch() {
@@ -19,12 +26,12 @@ function tryCloseAdvanced() {
 }
 
 function closeAdvancedPanel() {
-  S.advancedOpen  = false;
-  S.openDropdown  = null;
+  S.advancedOpen = false;
+  S.openDropdown = null;
   renderAll();
 }
 
-// Pure state mutation — no render. Callers decide when to render.
+// Pure state mutation — callers decide when to render.
 function resetAdvancedFilters() {
   S.filters.versions  = [];
   S.filters.countries = [];
@@ -32,13 +39,13 @@ function resetAdvancedFilters() {
   S.filters.tags      = [];
 }
 
-// Public action: reset + render. Called by the Clear All button in the panel.
-function clearAdvancedFilters() {
-  resetAdvancedFilters();
-  renderAll();
-}
+// Public: reset + render. Called by the Clear All button.
+function clearAdvancedFilters() { resetAdvancedFilters(); renderAll(); }
 
-// Called by the confirm-clear modal "Clear" button.
+// Called by confirm modal "Return" — just dismisses the modal, panel stays open.
+function keepAndClose() { closeModal('confirm-clear-modal'); }
+
+// Called by confirm modal "Abandon" — clears everything and closes the panel.
 function confirmClearClose() {
   resetAdvancedFilters();
   S.advancedOpen = false;
@@ -47,15 +54,7 @@ function confirmClearClose() {
   renderAll();
 }
 
-// Called by the confirm-clear modal "Keep" button.
-function keepAndClose() {
-  S.advancedOpen = false;
-  S.openDropdown = null;
-  closeModal('confirm-clear-modal');
-  renderAll();
-}
-
-// Toggle a multi-select dropdown open/closed. ddId is the full element ID.
+// Toggle a multi-select dropdown. ddId is the full element ID (e.g. 'ms-version-dropdown').
 function toggleDropdown(ddId) {
   S.openDropdown = S.openDropdown === ddId ? null : ddId;
   renderAdvancedDropdowns();
@@ -63,21 +62,34 @@ function toggleDropdown(ddId) {
 
 // ── Filter toggles ───────────────────────────────────────
 
-function toggleFreeOnly() { S.filters.freeOnly = !S.filters.freeOnly; renderAll(); }
+function toggleFreeOnly() {
+  S.filters.freeOnly = !S.filters.freeOnly;
+  S.advancedOpen = true;
+  renderAll();
+}
 
-function toggleVersion(vId)    { toggleInArray(S.filters.versions,  vId);     renderAll(); }
-function toggleCountry(country){ toggleInArray(S.filters.countries, country); renderAll(); }
+function toggleVersion(vId) {
+  toggleInArray(S.filters.versions, vId);
+  S.advancedOpen = true;
+  renderAll();
+}
+
+function toggleCountry(country) {
+  toggleInArray(S.filters.countries, country);
+  renderAll();
+}
 
 function toggleTag(tag) {
-  // 'Free' always routes to freeOnly for consistent filter behaviour
+  // 'Free' always routes to freeOnly for consistent filter logic
   if (tag === 'Free') { toggleFreeOnly(); return; }
   toggleInArray(S.filters.tags, tag);
+  S.advancedOpen = true;
   renderAll();
 }
 
 function setTagMode(mode) { S.filters.tagMode = mode; renderAll(); }
 
-// Clears everything including the search input.
+// Clears everything including the text search input.
 function clearFilters() {
   S.filters.search = '';
   document.getElementById('search').value = '';
@@ -145,13 +157,21 @@ function openModal(id)  { document.getElementById(id).classList.add('open');    
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
 // ── Tooltip ──────────────────────────────────────────────
+// Receives the hovered <tr> element; reads ss and title from data attributes.
 
-function showTooltip(e, ss) {
+function showTooltip(e, row) {
   if (window.innerWidth < 800) return;
-  const hasImg = ss && ss !== 'null' && ss !== '';
+  const ss    = row.dataset.ss || '';
+  const title = row.dataset.title || '';
+  const hasImg = ss !== '';
+
   document.getElementById('tooltip-image').style.display    = hasImg ? 'block' : 'none';
   document.getElementById('tooltip-fallback').style.display = hasImg ? 'none'  : 'block';
   if (hasImg) document.getElementById('tooltip-image').src  = ss;
+
+  const titleEl = document.getElementById('tooltip-title');
+  if (titleEl) titleEl.textContent = title;
+
   document.getElementById('tooltip').style.display = 'flex';
   _positionTooltip(e);
 }
@@ -161,7 +181,7 @@ function hideTooltip() { document.getElementById('tooltip').style.display = 'non
 function _positionTooltip(e) {
   const tt = document.getElementById('tooltip');
   if (tt.style.display !== 'flex') return;
-  const W = 224, H = 140;
+  const W = 224, H = 160;
   const x = e.clientX + 14 + W > window.innerWidth  - 8 ? e.clientX - W - 10 : e.clientX + 14;
   const y = e.clientY + 14 + H > window.innerHeight - 8 ? e.clientY - H - 10 : e.clientY + 14;
   tt.style.left = `${x}px`;
@@ -183,7 +203,6 @@ function sendContact() {
 
 // ── Event Listeners ──────────────────────────────────────
 
-// Standard modals close on overlay click. confirm-clear has .no-click-close so it's excluded.
 document.querySelectorAll('.modal-overlay:not(.no-click-close)').forEach(overlay => {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 });

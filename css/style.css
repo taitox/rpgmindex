@@ -194,8 +194,8 @@ th.col-title    { width: 15%; }
 th.col-tags     { width: 25%; }
 th.col-download { width: 120px; }
 th.col-actions  { width: 76px; }
-tbody tr:nth-child(even) { background: transparent; }
-tbody tr:nth-child(odd)  { background: transparent; }
+tbody tr:nth-child(even) { background: var(--surface-card); }
+tbody tr:nth-child(odd)  { background: var(--surface-card); }
 tbody tr { cursor: pointer; transition: background .12s; border-bottom: 1px solid var(--border-medium); }
 tbody tr:hover { background: var(--surface-table-row-hover); }
 tbody tr:last-child { border-bottom: none; }
@@ -249,7 +249,7 @@ td.col-country   { color: var(--text-muted); text-overflow: ellipsis; }
 /* ----- CARDS VIEW ----- */
 #cards-view { display: none; }
 #cards-view.vis { display: block; }
-.cards-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.cards-toolbar { display: none; align-items: center; gap: 10px; margin-bottom: 12px; }
 .cards-toolbar label { font-size: 12px; color: var(--text-muted); font-weight: 700; }
 .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 .card {
@@ -671,3 +671,76 @@ input[type="file"]:hover { border-color: var(--color-primary-500); }
   background: var(--color-free-bg); color: var(--color-free-text);
   border-color: var(--color-free-border); cursor: help;
 }
+
+/* ===== TOOLTIP TITLE ===== */
+#tooltip-title {
+  padding: 5px 8px 6px;
+  font-size: 11.5px; font-weight: 700;
+  color: var(--text-primary);
+  background: var(--surface-input);
+  border-top: 1px solid var(--border-subtle);
+  text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ===== SORT CONTROL (Sort by | value ▾) ===== */
+.sort-control {
+  display: none; /* shown only in cards view via body.view-cards */
+  align-items: center;
+  background: var(--surface-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+body.view-cards .sort-control { display: flex; }
+.sort-prefix {
+  padding: 0 8px; font-size: 11px; color: var(--text-subtle);
+  white-space: nowrap; border-right: 1px solid var(--border-subtle);
+  line-height: 30px;
+}
+.sort-control select {
+  border: none; background: transparent;
+  padding: 5px 8px; font-family: var(--font-ui); font-size: 12.5px;
+  color: var(--text-primary); cursor: pointer; outline: none;
+}
+
+/* Mobile: hide sort from control bar, show cards-toolbar instead */
+@media (max-width: 799px) {
+  #control-sort-wrapper { display: none !important; }
+  .cards-toolbar { display: flex; }
+  .cards-toolbar .sort-control { display: flex; }
+}
+
+/* ===== LANGUAGE SELECT ===== */
+.lang-select {
+  background: var(--surface-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  font-family: var(--font-ui); font-size: 12.5px;
+  color: var(--text-primary); cursor: pointer; outline: none;
+  transition: border-color .15s;
+}
+.lang-select:hover { border-color: var(--color-primary-400); }
+
+/* ===== DEV CELL CLICKABLE ===== */
+td.col-dev-link, .gd-dev.col-dev-link {
+  cursor: pointer; text-decoration: underline;
+  text-decoration-style: dotted; text-underline-offset: 2px;
+}
+td.col-dev-link:hover, .gd-dev.col-dev-link:hover {
+  color: var(--color-primary-500);
+}
+
+/* ===== YEAR / TITLE FIELD ERROR HIGHLIGHT ===== */
+.field-error {
+  border-color: #c0392b !important;
+  background: #fff0ee !important;
+}
+[data-theme="dark"] .field-error {
+  border-color: #e74c3c !important;
+  background: #2d0a0a !important;
+}
+
+/* ===== ADV CONTROL CLEAR (inline with other controls) ===== */
+.adv-control-clear { margin-left: auto; justify-content: flex-end; }

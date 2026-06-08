@@ -5,6 +5,7 @@
 function setText(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
 
 function renderAll() {
+  document.body.classList.toggle('view-cards', S.view === 'cards');
   syncI18n();
   renderAdvancedSearch();
   renderColumnsMenu();
@@ -23,12 +24,11 @@ function renderAll() {
     document.getElementById('cards-view').classList.add('vis');
     renderCards(games);
   }
+
+  refreshOpenModal();
 }
 
 // ── i18n ──────────────────────────────────────────────────
-// Static text: data-i18n attribute on the element, key is the attribute value.
-// Placeholders: data-i18n-ph attribute.
-// Toggle states and dynamic labels are handled below separately.
 
 function syncI18n() {
   document.querySelectorAll('[data-i18n]')
@@ -36,14 +36,16 @@ function syncI18n() {
   document.querySelectorAll('[data-i18n-ph]')
     .forEach(el => { el.placeholder = i(el.dataset.i18nPh); });
 
-  // Special cases not suited for data attributes
+  // Special cases
   document.getElementById('columns-button').textContent = `${i('cols')} ▾`;
   document.getElementById('edit-game-version').innerHTML =
     VERSIONS.map(v => `<option value="${v.id}">${v.label}</option>`).join('');
 
-  // Toggle button states
-  document.getElementById('lang-en-button').classList.toggle('on', S.lang === 'en');
-  document.getElementById('lang-pt-button').classList.toggle('on', S.lang === 'pt');
+  // Language select
+  const langSel = document.getElementById('lang-select');
+  if (langSel) langSel.value = S.lang;
+
+  // Toggle states
   document.getElementById('theme-light-button').classList.toggle('on', S.theme === 'light');
   document.getElementById('theme-dark-button').classList.toggle('on',  S.theme === 'dark');
   document.getElementById('view-compact').classList.toggle('on', S.view === 'compact');
@@ -74,8 +76,6 @@ function renderAdvancedSearch() {
   renderAdvancedChips();
 }
 
-// Renders a standard multi-select dropdown (versions and countries use this).
-// cfg: { ddId, lblId, options [{value, label}], selected [], toggleFn, emptyKey, summaryFn }
 function renderFilterDropdown({ ddId, lblId, options, selected, toggleFn, emptyKey, summaryFn }) {
   const dd = document.getElementById(ddId);
   const lb = document.getElementById(lblId);
@@ -90,7 +90,6 @@ function renderFilterDropdown({ ddId, lblId, options, selected, toggleFn, emptyK
   if (lb) lb.textContent = summaryFn();
 }
 
-// Tags dropdown has special logic (Free routes to freeOnly) so gets its own renderer.
 function renderTagsDropdown() {
   const dd = document.getElementById('ms-tags-dropdown');
   const lb = document.getElementById('ms-tags-label');
@@ -203,9 +202,16 @@ function renderTableHeaders() {
 }
 
 function gameRow(g) {
-  return `<tr onclick="openGameModal('${g.id}')" onmouseenter="showTooltip(event,'${g.ss || ''}')" onmouseleave="hideTooltip()">
+  const escapedTitle = (g.title || '').replace(/"/g, '&quot;');
+  const escapedDev   = (g.developer || '').replace(/"/g, '&quot;');
+  return `<tr
+    data-ss="${g.ss || ''}"
+    data-title="${escapedTitle}"
+    onclick="openGameModal('${g.id}')"
+    onmouseenter="showTooltip(event, this)"
+    onmouseleave="hideTooltip()">
     <td class="col-title">${g.title}</td>
-    ${S.cols.developer ? `<td class="col-developer">${g.developer}</td>` : ''}
+    ${S.cols.developer ? `<td class="col-developer col-dev-link" data-dev="${escapedDev}" onclick="event.stopPropagation();searchDev(this.dataset.dev)">${g.developer}</td>` : ''}
     ${S.cols.version   ? `<td><div class="badge-wrapper">${versionBadge(g.vId)}</div></td>` : ''}
     ${S.cols.year      ? `<td class="col-year">${g.year}</td>` : ''}
     ${S.cols.country   ? `<td class="col-country">${g.country}</td>` : ''}
@@ -216,8 +222,7 @@ function gameRow(g) {
 }
 
 function renderTable(games) {
-  const tbody = document.getElementById('table-body');
-  tbody.innerHTML = games.length
+  document.getElementById('table-body').innerHTML = games.length
     ? games.map(gameRow).join('')
     : `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div></td></tr>`;
 }
@@ -225,10 +230,13 @@ function renderTable(games) {
 // ── Cards ─────────────────────────────────────────────────
 
 function gameCard(g, idx) {
-  const ss = g.ss
-    ? `<img class="card-screenshot" src="${g.ss}" alt="${g.title}" loading="lazy"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-    : '';
+  const ss        = g.ss ? `<img class="card-screenshot" src="${g.ss}" alt="${g.title}" loading="lazy"
+    onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+  const visible   = g.tags.slice(0, 4);
+  const extra     = g.tags.length - 4;
+  const tagHtml   = visible.map(tagBadge).join('') +
+    (extra > 0 ? `<span class="badge badge-tag" onclick="event.stopPropagation();openGameModal('${g.id}')" role="button" tabindex="0">${extra}+ tags</span>` : '');
+
   return `<div class="card" style="animation-delay:${Math.min(idx * 25, 200)}ms" onclick="openGameModal('${g.id}')">
     ${ss}
     <div class="card-screenshot-fallback" style="${g.ss ? 'display:none' : 'display:flex'}" data-i18n="noss"></div>
@@ -238,7 +246,7 @@ function gameCard(g, idx) {
         <span class="card-dev-name">${g.developer}</span>
         <span class="card-dev-meta"> · ${g.year} · ${g.country}</span>
       </div>
-      <div class="card-tags badge-wrapper">${g.tags.slice(0, 3).map(tagBadge).join('')}</div>
+      <div class="card-tags badge-wrapper">${tagHtml}</div>
     </div>
     <div class="card-footer">
       <div class="badge-wrapper">${versionBadge(g.vId)}</div>
@@ -256,8 +264,7 @@ function renderCards(games) {
           <span class="add-icon">＋</span>
           <span class="add-label" data-i18n="addgame"></span>
         </div>
-      </div>`
-    : '';
+      </div>` : '';
   const empty = games.length === 0
     ? `<div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div>`
     : games.map(gameCard).join('');
@@ -270,6 +277,8 @@ function openGameModal(gameId) {
   const g = GAMES.find(x => x.id === gameId);
   if (!g) return;
 
+  S.activeModalGameId = gameId;
+
   const ssImg = document.getElementById('game-detail-screenshot');
   const ssFb  = document.getElementById('game-detail-screenshot-fallback');
   if (g.ss) { ssImg.src = g.ss; ssImg.style.display = 'block'; ssFb.style.display = 'none'; }
@@ -278,18 +287,8 @@ function openGameModal(gameId) {
   setText('game-detail-title', g.title);
   setText('game-detail-id',    `#${g.id}`);
 
-  document.getElementById('game-detail-meta').innerHTML = `
-    <div class="game-detail-meta-row">
-      <span class="gd-dev">${g.developer || '—'}</span>
-      <span class="gd-sep">·</span>
-      <span class="gd-year">${g.year || '—'}</span>
-      <span class="gd-sep">·</span>
-      <span class="gd-country">${g.country || 'Unknown'}</span>
-    </div>
-    <div>${versionBadge(g.vId)}</div>`;
-
-  document.getElementById('game-detail-tags').innerHTML =
-    `<div class="badge-wrapper">${g.tags.map(tagBadge).join('')}</div>`;
+  _renderModalMeta(g);
+  _renderModalTags(g);
 
   document.getElementById('game-detail-footer').innerHTML =
     `<div>${downloadBadge(g)}</div>
@@ -299,4 +298,34 @@ function openGameModal(gameId) {
      </div>` : ''}`;
 
   openModal('game-detail-modal');
+}
+
+function _renderModalMeta(g) {
+  const escapedDev = (g.developer || '').replace(/"/g, '&quot;');
+  document.getElementById('game-detail-meta').innerHTML = `
+    <div class="game-detail-meta-row">
+      <span class="gd-dev col-dev-link" data-dev="${escapedDev}"
+            onclick="searchDev(this.dataset.dev)">${g.developer || '—'}</span>
+      <span class="gd-sep">·</span>
+      <span class="gd-year">${g.year || '—'}</span>
+      <span class="gd-sep">·</span>
+      <span class="gd-country">${g.country || 'Unknown'}</span>
+    </div>
+    <div>${versionBadge(g.vId)}</div>`;
+}
+
+function _renderModalTags(g) {
+  document.getElementById('game-detail-tags').innerHTML =
+    `<div class="badge-wrapper">${g.tags.map(tagBadge).join('')}</div>`;
+}
+
+// Refreshes the interactive parts of the detail modal when filter state changes
+// while the modal is open (e.g. user clicks a tag badge inside the modal).
+function refreshOpenModal() {
+  if (!S.activeModalGameId) return;
+  if (!document.getElementById('game-detail-modal')?.classList.contains('open')) return;
+  const g = GAMES.find(x => x.id === S.activeModalGameId);
+  if (!g) return;
+  _renderModalMeta(g);
+  _renderModalTags(g);
 }

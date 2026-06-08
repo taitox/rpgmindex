@@ -16,6 +16,7 @@ const T = {
     found:    n => `${n} jogo${n !== 1 ? 's' : ''} encontrado${n !== 1 ? 's' : ''}`,
     loading:  'Carregando…',
     advsearch: 'Busca Avançada',
+    sortby:   'Ordenar por',
 
     title:   'Título',  dev:     'Dev',   ver:  'Versão',
     yr:      'Ano',     country: 'País',  tags: 'Tags',
@@ -29,10 +30,10 @@ const T = {
     logout: 'Sair',    addgame: '+ Adicionar Jogo',
     editgame: 'Editar Jogo',
     save: 'Salvar',  actions: 'Ações',
-    sortby: 'Ordenar por',  adminmode: 'Modo Admin',
+    adminmode: 'Modo Admin',
     confirmdel: 'Excluir este jogo?',
 
-    edtitle: 'Título',          eddev:     'Desenvolvedor',
+    edtitle: 'Título',           eddev:     'Desenvolvedor',
     edver:   'Versão RPG Maker', edyr:      'Ano',
     edss:    'Screenshot',       edurl:     'URL de Download',
     eddl:    'Download',         edtags:    'Tags',
@@ -43,11 +44,13 @@ const T = {
     tagph:     'Selecionar ou adicionar tag…',
     newtag:    'Nova tag — será adicionada ao salvar',
     tagsrequired: 'Selecione pelo menos uma tag.',
+    notitle:  'O jogo precisa de um título.',
+    invalidyear: 'Digite um ano válido (ex: 2004).',
 
-    confirmclear:    'Limpar busca?',
-    confirmclearsub: 'Limpar todos os filtros ativos?',
-    confirmkeep:     'Manter',
-    confirmclearbtn: 'Limpar',
+    confirmclear:    'Abandonar busca?',
+    confirmclearsub: 'Sua busca atual será limpa e você voltará à visualização padrão.',
+    confirmkeep:     'Retornar',
+    confirmclearbtn: 'Abandonar',
 
     contact:      'Contate-nos',
     contacttitle: 'Contato',
@@ -73,6 +76,7 @@ const T = {
     found:    n => `${n} game${n !== 1 ? 's' : ''} found`,
     loading:  'Loading…',
     advsearch: 'Advanced Search',
+    sortby:   'Sort by',
 
     title:   'Title',  dev:     'Developer',  ver:  'Version',
     yr:      'Year',   country: 'Country',    tags: 'Tags',
@@ -86,7 +90,7 @@ const T = {
     logout: 'Logout',  addgame: '+ Add Game',
     editgame: 'Edit Game',
     save: 'Save',  actions: 'Actions',
-    sortby: 'Sort by',  adminmode: 'Admin Mode',
+    adminmode: 'Admin Mode',
     confirmdel: 'Delete this game?',
 
     edtitle: 'Title',              eddev:     'Developer',
@@ -100,11 +104,13 @@ const T = {
     tagph:     'Select or add a tag…',
     newtag:    'New tag — will be added on save',
     tagsrequired: 'Select at least one tag.',
+    notitle:  'Game requires a title.',
+    invalidyear: 'Enter a valid year (e.g. 2004).',
 
-    confirmclear:    'Clear search?',
-    confirmclearsub: 'Clear all active search filters?',
-    confirmkeep:     'Keep',
-    confirmclearbtn: 'Clear',
+    confirmclear:    'Abandon search?',
+    confirmclearsub: 'Your current search will be cleared and you will return to the default view.',
+    confirmkeep:     'Return',
+    confirmclearbtn: 'Abandon',
 
     contact:      'Contact us',
     contacttitle: 'Contact',

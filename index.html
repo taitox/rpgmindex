@@ -16,7 +16,7 @@
 <!-- LOADING OVERLAY -->
 <div class="loading-overlay hidden" id="loading-overlay">
   <div class="loading-spinner"></div>
-  <div class="loading-message" data-i18n="loading">Carregando…</div>
+  <div class="loading-message" data-i18n="loading"></div>
 </div>
 
 <!-- TOP BAR -->
@@ -25,20 +25,21 @@
     <span class="logo-icon">♞</span>
     <div class="logo-text">
       <span class="logo-title">RPGMINDEX</span>
-      <span class="logo-sub" data-i18n="sub" id="logo-sub"></span>
+      <span class="logo-sub" data-i18n="sub"></span>
     </div>
   </a>
   <div class="topbar-right">
-    <div class="toggle-pill">
-      <button onclick="setLang('en')" id="lang-en-button">🇺🇸</button>
-      <button onclick="setLang('pt')" id="lang-pt-button" class="on">🇧🇷</button>
-    </div>
+    <!-- Language: native select, options match i18n.js languages -->
+    <select id="lang-select" class="lang-select" onchange="setLang(this.value)">
+      <option value="en">🇺🇸 EN-US</option>
+      <option value="pt" selected>🇧🇷 PT-BR</option>
+    </select>
     <div class="toggle-pill">
       <button onclick="setTheme('light')" id="theme-light-button" class="on">☀️</button>
       <button onclick="setTheme('dark')"  id="theme-dark-button">🌙</button>
     </div>
     <button class="button-base" onclick="openModal('contact-modal')">
-      <span data-i18n="contact" id="contact-button-label"></span>
+      <span data-i18n="contact"></span>
     </button>
     <button class="icon-button" id="admin-button" onclick="adminClick()" title="Admin">⚙️</button>
   </div>
@@ -47,7 +48,7 @@
 <!-- ADMIN BAR -->
 <div id="admin-bar">
   <span class="admin-bar-left">
-    🔐 <span data-i18n="adminmode" id="admin-mode-label"></span> · <span id="admin-email-label"></span>
+    🔐 <span data-i18n="adminmode"></span> · <span id="admin-email-label"></span>
   </span>
   <div class="admin-bar-right">
     <button data-i18n="addgame"  id="admin-add-button"    onclick="openEdit(null)"></button>
@@ -66,6 +67,17 @@
         <input class="search-input" id="search" type="search" data-i18n-ph="search" oninput="onSearch(this.value)">
       </div>
       <button class="button-base" id="advanced-search-button" onclick="toggleAdvancedSearch()"></button>
+      <!-- Cards sort — visible only in cards view (body.view-cards), hidden on mobile -->
+      <div class="sort-control" id="control-sort-wrapper">
+        <span class="sort-prefix" data-i18n="sortby"></span>
+        <select id="cards-sort" onchange="onCardSort(this.value)">
+          <option value="title">Título A→Z</option>
+          <option value="title-d">Título Z→A</option>
+          <option value="year">Ano ↑</option>
+          <option value="year-d">Ano ↓</option>
+          <option value="developer">Dev A→Z</option>
+        </select>
+      </div>
     </div>
     <div class="control-right">
       <div class="columns-wrapper">
@@ -74,7 +86,7 @@
       </div>
       <div class="view-toggle">
         <button class="on" data-i18n="compact" id="view-compact" onclick="setView('compact')"></button>
-        <button data-i18n="cards" id="view-cards" onclick="setView('cards')"></button>
+        <button data-i18n="cards"   id="view-cards"   onclick="setView('cards')"></button>
       </div>
     </div>
   </div>
@@ -82,13 +94,13 @@
   <!-- ADVANCED SEARCH PANEL -->
   <div class="advanced-panel" id="advanced-panel">
     <div class="advanced-panel-header">
-      <span class="advanced-panel-title" data-i18n="advsearch" id="adv-panel-title"></span>
+      <span class="advanced-panel-title" data-i18n="advsearch"></span>
       <button class="advanced-panel-close" onclick="tryCloseAdvanced()" aria-label="Fechar">✕</button>
     </div>
     <div class="advanced-panel-body">
 
       <div class="adv-control">
-        <label class="adv-control-label" data-i18n="ver" id="adv-ver-label"></label>
+        <label class="adv-control-label" data-i18n="ver"></label>
         <div class="ms-wrapper">
           <button class="ms-trigger" onclick="toggleDropdown('ms-version-dropdown')">
             <span id="ms-version-label"></span><span class="ms-arrow">▾</span>
@@ -98,7 +110,7 @@
       </div>
 
       <div class="adv-control">
-        <label class="adv-control-label" data-i18n="country" id="adv-ctr-label"></label>
+        <label class="adv-control-label" data-i18n="country"></label>
         <div class="ms-wrapper">
           <button class="ms-trigger" onclick="toggleDropdown('ms-country-dropdown')">
             <span id="ms-country-label"></span><span class="ms-arrow">▾</span>
@@ -108,12 +120,12 @@
       </div>
 
       <div class="adv-control">
-        <label class="adv-control-label" data-i18n="freeonly" id="adv-free-label"></label>
+        <label class="adv-control-label" data-i18n="freeonly"></label>
         <button class="button-base" data-i18n="freeonly" id="adv-free-button" onclick="toggleFreeOnly()"></button>
       </div>
 
       <div class="adv-control adv-control-tags">
-        <label class="adv-control-label" data-i18n="tags" id="adv-tags-label"></label>
+        <label class="adv-control-label" data-i18n="tags"></label>
         <div class="adv-tags-row">
           <div class="ms-wrapper">
             <button class="ms-trigger" onclick="toggleDropdown('ms-tags-dropdown')">
@@ -122,17 +134,20 @@
             <div class="ms-dropdown" id="ms-tags-dropdown"></div>
           </div>
           <div class="mode-toggle">
-            <button class="on" id="adv-mode-or"  onclick="setTagMode('or')">OR</button>
-            <button           id="adv-mode-and" onclick="setTagMode('and')">AND</button>
+            <button id="adv-mode-or"  onclick="setTagMode('or')">OR</button>
+            <button id="adv-mode-and" class="on" onclick="setTagMode('and')">AND</button>
           </div>
         </div>
       </div>
 
+      <!-- Clear all sits inline with the other controls -->
+      <div class="adv-control adv-control-clear">
+        <label class="adv-control-label">&nbsp;</label>
+        <button class="clear-button" data-i18n="clearall" id="adv-clear-btn" onclick="clearAdvancedFilters()"></button>
+      </div>
+
     </div>
     <div class="advanced-chips-row" id="advanced-chips-row" style="display:none"></div>
-    <div class="advanced-panel-footer">
-      <button class="clear-button" data-i18n="clearall" id="adv-clear-btn" onclick="clearAdvancedFilters()"></button>
-    </div>
   </div>
 
   <!-- RESULTS COUNT -->
@@ -152,15 +167,18 @@
 
   <!-- CARDS VIEW -->
   <div id="cards-view">
+    <!-- Mobile-only sort toolbar (hidden on desktop) -->
     <div class="cards-toolbar">
-      <label data-i18n="sortby" id="sort-label"></label>
-      <select class="version-select" id="cards-sort" onchange="onCardSort(this.value)" style="min-width:150px">
-        <option value="title">Título A→Z</option>
-        <option value="title-d">Título Z→A</option>
-        <option value="year">Ano (mais antigo)</option>
-        <option value="year-d">Ano (mais recente)</option>
-        <option value="developer">Dev A→Z</option>
-      </select>
+      <div class="sort-control">
+        <span class="sort-prefix" data-i18n="sortby"></span>
+        <select id="cards-sort-mobile" onchange="onCardSort(this.value)" style="min-width:130px">
+          <option value="title">Título A→Z</option>
+          <option value="title-d">Título Z→A</option>
+          <option value="year">Ano ↑</option>
+          <option value="year-d">Ano ↓</option>
+          <option value="developer">Dev A→Z</option>
+        </select>
+      </div>
     </div>
     <div class="cards-grid" id="cards-grid"></div>
   </div>
@@ -171,12 +189,13 @@
 <div id="tooltip">
   <img id="tooltip-image" src="" alt="Screenshot"/>
   <div class="tooltip-fallback" data-i18n="noss" id="tooltip-fallback"></div>
+  <div id="tooltip-title"></div>
 </div>
 
 <!-- GAME DETAIL MODAL -->
 <div class="modal-overlay" id="game-detail-modal">
   <div class="modal-content game-detail-content">
-    <button class="game-detail-close" onclick="closeModal('game-detail-modal')" aria-label="Fechar">×</button>
+    <button class="game-detail-close" onclick="closeModal('game-detail-modal');S.activeModalGameId=null" aria-label="Fechar">×</button>
     <div class="game-detail-screenshot-wrap">
       <img id="game-detail-screenshot" src="" alt="Screenshot"/>
       <div id="game-detail-screenshot-fallback"></div>
@@ -193,14 +212,14 @@
   </div>
 </div>
 
-<!-- CONFIRM CLEAR MODAL — .no-click-close prevents accidental dismissal -->
+<!-- CONFIRM ABANDON SEARCH MODAL — .no-click-close prevents accidental dismissal -->
 <div class="modal-overlay no-click-close" id="confirm-clear-modal">
   <div class="modal-content">
-    <div class="modal-title"    data-i18n="confirmclear"    id="confirm-clear-title"></div>
-    <div class="modal-subtitle" data-i18n="confirmclearsub" id="confirm-clear-sub"></div>
+    <div class="modal-title"    data-i18n="confirmclear"></div>
+    <div class="modal-subtitle" data-i18n="confirmclearsub"></div>
     <div class="modal-actions">
-      <button class="button-secondary" data-i18n="confirmkeep"     id="confirm-keep-btn"  onclick="keepAndClose()"></button>
-      <button class="button-primary"   data-i18n="confirmclearbtn" id="confirm-clear-btn" onclick="confirmClearClose()"></button>
+      <button class="button-secondary" data-i18n="confirmkeep"     onclick="keepAndClose()"></button>
+      <button class="button-primary"   data-i18n="confirmclearbtn" onclick="confirmClearClose()"></button>
     </div>
   </div>
 </div>
@@ -208,19 +227,19 @@
 <!-- ADMIN LOGIN MODAL -->
 <div class="modal-overlay" id="login-modal">
   <div class="modal-content">
-    <div class="modal-title"    data-i18n="adminlogin" id="login-title"></div>
-    <div class="modal-subtitle" data-i18n="adminsub"   id="login-subtitle"></div>
+    <div class="modal-title"    data-i18n="adminlogin"></div>
+    <div class="modal-subtitle" data-i18n="adminsub"></div>
     <div class="field">
-      <label data-i18n="email" id="login-email-label"></label>
+      <label data-i18n="email"></label>
       <input id="login-email" type="email" placeholder="admin@example.com"/>
     </div>
     <div class="field">
-      <label data-i18n="pass" id="login-password-label"></label>
+      <label data-i18n="pass"></label>
       <input id="login-password" type="password"/>
     </div>
     <div class="modal-actions">
-      <button class="button-secondary" data-i18n="cancel" id="login-cancel" onclick="closeModal('login-modal')"></button>
-      <button class="button-primary"   data-i18n="login"  id="login-button" onclick="doLogin()"></button>
+      <button class="button-secondary" data-i18n="cancel" onclick="closeModal('login-modal')"></button>
+      <button class="button-primary"   data-i18n="login"  onclick="doLogin()"></button>
     </div>
     <div class="login-error" id="login-error">Credenciais inválidas.</div>
   </div>
@@ -234,11 +253,12 @@
 
     <div class="field-row">
       <div class="field">
-        <label data-i18n="edtitle" id="edit-label-title"></label>
+        <label data-i18n="edtitle"></label>
         <input id="edit-game-title" type="text" placeholder="Nome do jogo"/>
+        <div class="login-error" id="edit-title-error" style="display:none;text-align:left"></div>
       </div>
       <div class="field">
-        <label data-i18n="eddev" id="edit-label-developer"></label>
+        <label data-i18n="eddev"></label>
         <input id="edit-game-developer" type="text" list="developer-list" autocomplete="off" placeholder="Dev ou estúdio"/>
         <datalist id="developer-list"></datalist>
       </div>
@@ -246,29 +266,32 @@
 
     <div class="field-row">
       <div class="field">
-        <label data-i18n="edver" id="edit-label-version"></label>
+        <label data-i18n="edver"></label>
         <select id="edit-game-version"></select>
       </div>
       <div class="field">
-        <label data-i18n="edyr" id="edit-label-year"></label>
-        <input id="edit-game-year" type="number" min="1995" max="2030" placeholder="AAAA"/>
+        <label data-i18n="edyr"></label>
+        <!-- oninput enforces max 4 digits; regex in saveGame enforces 19xx/20xx -->
+        <input id="edit-game-year" type="number" min="1900" max="2099" placeholder="AAAA"
+               oninput="if(this.value.length>4)this.value=this.value.slice(0,4)"/>
+        <div class="login-error" id="edit-year-error" style="display:none;text-align:left"></div>
       </div>
     </div>
 
     <div class="field">
-      <label data-i18n="edcountry" id="edit-label-country"></label>
+      <label data-i18n="edcountry"></label>
       <input id="edit-game-country" type="text" list="country-datalist" data-i18n-ph="countryph" autocomplete="off"/>
       <datalist id="country-datalist"></datalist>
     </div>
 
     <div class="field">
-      <div class="field-label" data-i18n="edss" id="edit-label-screenshot"></div>
+      <div class="field-label" data-i18n="edss"></div>
       <div class="screenshot-mode-toggle">
         <button type="button" id="screenshot-url-button"  class="on" onclick="setScreenshotMode('url')">
-          <span data-i18n="ssurl" id="screenshot-url-label"></span>
+          <span data-i18n="ssurl"></span>
         </button>
         <button type="button" id="screenshot-file-button" onclick="setScreenshotMode('file')">
-          <span data-i18n="ssupload" id="screenshot-file-label"></span>
+          <span data-i18n="ssupload"></span>
         </button>
       </div>
       <input id="edit-screenshot-url"  type="url"  placeholder="https://…"/>
@@ -276,22 +299,22 @@
     </div>
 
     <div class="field">
-      <div class="field-label" data-i18n="eddl" id="edit-label-download"></div>
+      <div class="field-label" data-i18n="eddl"></div>
       <div class="download-options">
         <div class="download-option">
           <input type="radio" name="download-type" id="download-available" value="available" onchange="toggleDownloadField()" checked/>
-          <label for="download-available" data-i18n="avail" id="download-label-available"></label>
+          <label for="download-available" data-i18n="avail"></label>
         </div>
         <div class="download-option">
           <input type="radio" name="download-type" id="download-unavailable" value="na" onchange="toggleDownloadField()"/>
-          <label for="download-unavailable" data-i18n="na2" id="download-label-unavailable"></label>
+          <label for="download-unavailable" data-i18n="na2"></label>
         </div>
       </div>
       <input id="edit-download-url" type="url" placeholder="https://…" style="margin-top:6px"/>
     </div>
 
     <div class="field">
-      <div class="field-label" data-i18n="edtags" id="edit-label-tags"></div>
+      <div class="field-label" data-i18n="edtags"></div>
       <div class="edit-tag-ms" id="edit-tag-ms">
         <div class="edit-tag-input-row">
           <input type="text" id="edit-tag-input"
@@ -309,8 +332,8 @@
     </div>
 
     <div class="modal-actions">
-      <button class="button-secondary" data-i18n="cancel" id="edit-cancel" onclick="closeModal('edit-modal')"></button>
-      <button class="button-primary"   data-i18n="save"   id="edit-save"   onclick="saveGame()"></button>
+      <button class="button-secondary" data-i18n="cancel" onclick="closeModal('edit-modal')"></button>
+      <button class="button-primary"   data-i18n="save"   onclick="saveGame()"></button>
     </div>
   </div>
 </div>
@@ -318,23 +341,23 @@
 <!-- CONTACT MODAL -->
 <div class="modal-overlay" id="contact-modal">
   <div class="modal-content">
-    <div class="modal-title"    data-i18n="contacttitle" id="contact-title"></div>
-    <div class="modal-subtitle" data-i18n="contactsub"   id="contact-subtitle"></div>
+    <div class="modal-title"    data-i18n="contacttitle"></div>
+    <div class="modal-subtitle" data-i18n="contactsub"></div>
     <div class="field">
-      <label data-i18n="contactname"  id="contact-name-label"></label>
+      <label data-i18n="contactname"></label>
       <input id="contact-name" type="text" placeholder="Seu nome"/>
     </div>
     <div class="field">
-      <label data-i18n="contactemail" id="contact-email-label"></label>
+      <label data-i18n="contactemail"></label>
       <input id="contact-email" type="email" placeholder="seu@email.com"/>
     </div>
     <div class="field">
-      <label data-i18n="contactmsg"   id="contact-message-label"></label>
+      <label data-i18n="contactmsg"></label>
       <textarea id="contact-message" placeholder="…"></textarea>
     </div>
     <div class="modal-actions">
-      <button class="button-secondary" data-i18n="cancel"      id="contact-cancel" onclick="closeModal('contact-modal')"></button>
-      <button class="button-primary"   data-i18n="contactsend" id="contact-send"   onclick="sendContact()"></button>
+      <button class="button-secondary" data-i18n="cancel"      onclick="closeModal('contact-modal')"></button>
+      <button class="button-primary"   data-i18n="contactsend" onclick="sendContact()"></button>
     </div>
   </div>
 </div>

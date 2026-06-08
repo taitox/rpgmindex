@@ -40,7 +40,10 @@ function downloadBadge(g) {
 function versionBadge(vId) {
   const v = VERSIONS.find(v => v.id === vId);
   if (!v) return '';
-  return `<span class="badge badge-version">${v.label}</span>`;
+  const active = S.filters.versions.includes(vId);
+  return `<span class="badge badge-version ${active ? 'active-filter' : ''}"
+    onclick="event.stopPropagation();toggleVersion('${vId}')"
+    role="button" tabindex="0">${v.label}</span>`;
 }
 
 function tagBadge(tagName) {

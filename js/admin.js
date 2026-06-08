@@ -1,7 +1,5 @@
 'use strict';
 
-// ── Edit modal form state ─────────────────────────────────
-// Grouped as one object so ownership is obvious and both fields travel together.
 const editForm = { tags: [], tagFilter: '' };
 
 // ── Login / logout ────────────────────────────────────────
@@ -56,15 +54,17 @@ function openEdit(gameId) {
   setScreenshotMode('url');
   document.getElementById('edit-screenshot-url').value = g?.ss || '';
 
-  const dlType = g?.url ? 'download-available' : 'download-unavailable';
-  document.getElementById(dlType).checked = true;
+  document.getElementById(g?.url ? 'download-available' : 'download-unavailable').checked = true;
   document.getElementById('edit-download-url').value = g?.url || '';
   toggleDownloadField();
 
-  document.getElementById('edit-tag-error').style.display = 'none';
+  // Clear all inline errors
+  ['edit-tag-error', 'edit-title-error', 'edit-year-error'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
   renderEditTagChips();
   renderEditTagDropdown('');
-
   setText('edit-modal-title', gameId ? i('editgame') : i('addgame'));
   openModal('edit-modal');
 }
@@ -104,16 +104,14 @@ function renderEditTagChips() {
 
 function renderEditTagDropdown(filter) {
   if (filter !== undefined) editForm.tagFilter = filter;
-  const dd       = document.getElementById('edit-tag-dropdown');
+  const dd      = document.getElementById('edit-tag-dropdown');
   if (!dd) return;
   const selected = editForm.tags.map(t => t.name);
   const q        = editForm.tagFilter.toLowerCase();
   const matches  = TAGS.filter(t => t.name.toLowerCase().includes(q) && !selected.includes(t.name));
-
   dd.innerHTML = matches.map(t =>
     `<div class="ms-option" onclick="toggleEditTag('${t.name}', false)">${t.name}</div>`
   ).join('') || (q ? `<div class="ms-empty">↵ Enter to add "<strong>${editForm.tagFilter}</strong>"</div>` : '');
-
   dd.classList.toggle('open', matches.length > 0 || q.length > 0);
 }
 
@@ -156,17 +154,14 @@ function removeEditTag(name) {
 }
 
 // ── Unused tag cleanup ────────────────────────────────────
-// Runs after save and delete to keep the tags table tidy.
 
 async function cleanupUnusedTags() {
   const { data: allGames, error: gErr } = await sb.from('games').select('tags');
   if (gErr) { console.error('Tag cleanup — games:', gErr.message); return; }
   const used = new Set((allGames || []).flatMap(g => g.tags || []));
-
   const { data: allTags, error: tErr } = await sb.from('tags').select('name');
   if (tErr) { console.error('Tag cleanup — tags:', tErr.message); return; }
   const unused = (allTags || []).filter(t => !used.has(t.name)).map(t => t.name);
-
   if (unused.length) {
     const { error } = await sb.from('tags').delete().in('name', unused);
     if (error) console.error('Tag cleanup — delete:', error.message);
@@ -176,22 +171,54 @@ async function cleanupUnusedTags() {
 // ── Save ──────────────────────────────────────────────────
 
 async function saveGame() {
-  if (!editForm.tags.length) {
-    document.getElementById('edit-tag-error').style.display = 'block';
-    return;
-  }
-  document.getElementById('edit-tag-error').style.display = 'none';
+  let valid = true;
 
-  // Insert any brand-new tags first
+  // Title validation
+  const title = document.getElementById('edit-game-title').value.trim();
+  const titleErr = document.getElementById('edit-title-error');
+  if (!title) {
+    titleErr.textContent = i('notitle');
+    titleErr.style.display = 'block';
+    valid = false;
+  } else {
+    titleErr.style.display = 'none';
+  }
+
+  // Year validation — must be 4 digits starting with 19 or 20
+  const yearVal  = document.getElementById('edit-game-year').value.trim();
+  const yearErr  = document.getElementById('edit-year-error');
+  const validYear = /^(19|20)\d{2}$/.test(yearVal);
+  if (!validYear) {
+    yearErr.textContent = i('invalidyear');
+    yearErr.style.display = 'block';
+    document.getElementById('edit-game-year').classList.add('field-error');
+    valid = false;
+  } else {
+    yearErr.style.display = 'none';
+    document.getElementById('edit-game-year').classList.remove('field-error');
+  }
+
+  // Tags validation
+  const tagErr = document.getElementById('edit-tag-error');
+  if (!editForm.tags.length) {
+    tagErr.style.display = 'block';
+    valid = false;
+  } else {
+    tagErr.style.display = 'none';
+  }
+
+  if (!valid) return;
+
+  // Insert brand-new tags first
   const newTags = editForm.tags.filter(t => t.isNew);
   if (newTags.length) {
     const { error } = await sb.from('tags').upsert(newTags.map(t => ({ name: t.name })), { onConflict: 'name' });
     if (error) console.error('Tag insert failed:', error.message);
   }
 
-  const ssFile  = document.getElementById('edit-screenshot-file');
-  const ssUrl   = document.getElementById('edit-screenshot-url');
-  const ss      = (ssFile.style.display !== 'none' && ssFile.files.length)
+  const ssFile = document.getElementById('edit-screenshot-file');
+  const ssUrl  = document.getElementById('edit-screenshot-url');
+  const ss     = (ssFile.style.display !== 'none' && ssFile.files.length)
     ? await _uploadScreenshot(ssFile.files[0])
     : ssUrl.value.trim() || null;
 
@@ -199,11 +226,11 @@ async function saveGame() {
   const gameId = document.getElementById('edit-game-id').value;
 
   const game = {
-    title:     document.getElementById('edit-game-title').value.trim()     || 'Sem título',
+    title,
     developer: document.getElementById('edit-game-developer').value.trim() || '',
-    v_id:      document.getElementById('edit-game-version').value          || VERSIONS[0]?.id || '',
-    year:      parseInt(document.getElementById('edit-game-year').value)   || new Date().getFullYear(),
-    country:   document.getElementById('edit-game-country').value.trim()   || 'Unknown',
+    v_id:      document.getElementById('edit-game-version').value || VERSIONS[0]?.id || '',
+    year:      parseInt(yearVal),
+    country:   document.getElementById('edit-game-country').value.trim() || 'Unknown',
     tags:      editForm.tags.map(t => t.name),
     ss,
     url: dlType === 'available' ? (document.getElementById('edit-download-url').value.trim() || null) : null,
