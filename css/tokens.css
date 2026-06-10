@@ -5,7 +5,7 @@
 }
 @font-face {
   font-family: 'Orange Kid';
-  src: url('./fonts/Orange Kid.ttf') format('truetype');
+  src: url('./fonts/Orange Kid.otf') format('truetype');
   font-display: swap;
 }
 
@@ -106,7 +106,7 @@
   /* ---- FONTS ---- */
   --font-display: 'Alkhemikal', sans-serif;
   --font-title:   'Orange Kid', sans-serif;
-  --font-ui:      'Nunito', sans-serif;
+  --font-ui:      'Inter', sans-serif;
 
   /* ---- BACKGROUND GRID ---- */
   --grid-pattern: rgba(140, 155, 210, 0.14);
