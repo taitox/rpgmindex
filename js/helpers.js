@@ -8,23 +8,23 @@ function toggleInArray(arr, item) {
 }
 
 function activeFilterCount() {
-  return S.filters.versions.length + S.filters.countries.length + S.filters.tags.length;
+  return S.filters.versions.length  + S.filters.countries.length +
+         S.filters.years.length     + S.filters.tags.length;
 }
 
 // ── Developer string helpers ──────────────────────────────
-// A dev string like "lubuo; cornelius" is split on ";" so each
-// part becomes an independent clickable search link.
 
 function splitDev(dev) {
   return (dev || '').split(';').map(s => s.trim()).filter(Boolean);
 }
 
+// Each part is a clickable span that opens the dev panel.
 function devLinks(dev) {
   const parts = splitDev(dev);
   if (!parts.length) return '—';
   return parts
-    .map(p => `<span class="dev-link" data-dev="${p.replace(/"/g, '&quot;')}"
-      onclick="event.stopPropagation();searchBy(this.dataset.dev)">${p}</span>`)
+    .map(p => `<span class="dev-link" data-dev="${p.replace(/"/g,'&quot;')}"
+      onclick="event.stopPropagation();toggleDev(this.dataset.dev)">${p}</span>`)
     .join(' · ');
 }
 
@@ -53,16 +53,18 @@ function downloadBadge(g) {
     class="badge badge-download ${cls}" onclick="event.stopPropagation()">${label}</a>`;
 }
 
-function versionBadge(vId) {
+// showIcon=true renders the icon in the badge (table column only).
+function versionBadge(vId, showIcon = false) {
   const v = VERSIONS.find(v => v.id === vId);
   if (!v) return '';
-  const active = S.filters.versions.includes(vId);
+  const active  = S.filters.versions.includes(vId);
+  const iconHtml = (showIcon && v.iconUrl)
+    ? `<img src="${v.iconUrl}" class="version-icon" alt=""/> ` : '';
   return `<span class="badge badge-version ${active ? 'active-filter' : ''}"
     onclick="event.stopPropagation();toggleVersion('${vId}')"
-    role="button" tabindex="0">${v.label}</span>`;
+    role="button" tabindex="0">${iconHtml}${v.label}</span>`;
 }
 
-// Free no longer has special-casing — all tags are treated uniformly.
 function tagBadge(tagName) {
   const isActive = S.filters.tags.includes(tagName);
   const def      = TAGS.find(t => t.name === tagName);
@@ -86,8 +88,9 @@ function filterGames() {
           !(VERSIONS.find(v => v.id === g.vId)?.label.toLowerCase().includes(q)) &&
           !g.tags.some(t => t.toLowerCase().includes(q))) return false;
     }
-    if (f.versions.length  && !f.versions.includes(g.vId))      return false;
-    if (f.countries.length && !f.countries.includes(g.country))  return false;
+    if (f.versions.length  && !f.versions.includes(g.vId))          return false;
+    if (f.countries.length && !f.countries.includes(g.country))      return false;
+    if (f.years.length     && !f.years.includes(g.year))             return false;
     if (f.tags.length) {
       const ok = f.tagMode === 'or'
         ? f.tags.some(t  => g.tags.includes(t))
@@ -109,10 +112,7 @@ function sortGames(games) {
     else if (col === 'year')      { av = a.year;                    bv = b.year;                    }
     else if (col === 'country')   { av = a.country.toLowerCase();   bv = b.country.toLowerCase();   }
     else                          { av = a.title.toLowerCase();     bv = b.title.toLowerCase();     }
-
     if (av !== bv) return av < bv ? -sign : sign;
-
-    // Tiebreakers (always ascending): title → developer → year → date added
     const ta = a.title.toLowerCase(), tb = b.title.toLowerCase();
     if (ta !== tb) return ta < tb ? -1 : 1;
     const da = a.developer.toLowerCase(), db = b.developer.toLowerCase();

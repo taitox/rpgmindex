@@ -12,12 +12,12 @@ const T = {
     cols:     'Colunas',
     compact:  'Tabela',
     cards:    'Cartões',
-    filters:  'Filtros',
     clearall: 'Limpar tudo',
     found:    n => `${n} jogo${n !== 1 ? 's' : ''} encontrado${n !== 1 ? 's' : ''}`,
     loading:  'Carregando…',
     advsearch: 'Busca Avançada',
     sortby:   'Ordenar por',
+    tagsonly: 'Apenas tags',
 
     title:   'Título',  dev:     'Dev',   ver:  'Versão',
     yr:      'Ano',     country: 'País',  tags: 'Tags',
@@ -33,25 +33,47 @@ const T = {
     save: 'Salvar',  actions: 'Ações',
     adminmode: 'Modo Admin',
     confirmdel: 'Excluir este jogo?',
+    managever:  'Versões',
+    managetags: 'Tags',
 
     edtitle: 'Título',           eddev:     'Desenvolvedor',
-    edver:   'Versão RPG Maker', edyr:      'Ano',
-    edss:    'Screenshot',       edurl:     'URL de Download',
-    eddl:    'Download',         edtags:    'Tags',
+    edver:   'Versão RPG Maker', edyr:      'Ano (ex: 2004)',
+    edss:    'URL do Screenshot', edurl:    'URL de Download',
+    eddl:    'Download',          edtags:   'Tags',
     edcountry: 'País de Origem',
-    avail:   'Disponível',       na2:       'Lost Media',
-    ssurl:   'URL',              ssupload:  'Enviar Arquivo',
+    avail:   'Disponível',        na2:      'Lost Media',
     countryph: 'Digite ou selecione um país…',
     tagph:     'Selecionar ou adicionar tag…',
     newtag:    'Nova tag — será adicionada ao salvar',
     tagsrequired: 'Selecione pelo menos uma tag.',
     notitle:  'O jogo precisa de um título.',
     invalidyear: 'Digite um ano válido (ex: 2004).',
+    uploadimage: 'Enviar imagem',
+    deleteimage: 'Deletar imagem',
 
     confirmclear:    'Abandonar busca?',
     confirmclearsub: 'Sua busca atual será limpa e você voltará à visualização padrão.',
     confirmkeep:     'Retornar',
     confirmclearbtn: 'Abandonar',
+
+    // Warning div
+    pendingactions: 'Ações Pendentes',
+    gamedelwarn:  n => `Jogo "${n}" será excluído`,
+    tagdelwarn:   n => `Tag "${n}" será excluída de todos os jogos`,
+    tagrenamewarn:(o,n) => `Tag "${o}" será renomeada para "${n}"`,
+    tagmergewarn: (o,n) => `Tag "${o}" será mesclada em "${n}"`,
+
+    // Version / tag management
+    addversion:   '+ Adicionar Versão',
+    vername:      'Nome (longo)',
+    verabbr:      'Abreviação',
+    vericon:      'Ícone',
+    deleteicon:   'Deletar ícone',
+    uploadicon:   'Enviar ícone',
+    cannotdelete: 'Não é possível excluir — há jogos usando esta entrada.',
+    addtag:       '+ Adicionar Tag',
+    renametag:    'Renomear',
+    mergewarning: 'Esta tag já existe e será mesclada.',
 
     contact:      'Contate-nos',
     contacttitle: 'Contato',
@@ -73,12 +95,12 @@ const T = {
     cols:     'Columns',
     compact:  'Table',
     cards:    'Cards',
-    filters:  'Filters',
     clearall: 'Clear all',
     found:    n => `${n} game${n !== 1 ? 's' : ''} found`,
     loading:  'Loading…',
     advsearch: 'Advanced Search',
     sortby:   'Sort by',
+    tagsonly: 'Tags only',
 
     title:   'Title',  dev:     'Developer',  ver:  'Version',
     yr:      'Year',   country: 'Country',    tags: 'Tags',
@@ -94,25 +116,47 @@ const T = {
     save: 'Save',  actions: 'Actions',
     adminmode: 'Admin Mode',
     confirmdel: 'Delete this game?',
+    managever:  'Versions',
+    managetags: 'Tags',
 
     edtitle: 'Title',              eddev:     'Developer',
-    edver:   'RPG Maker Version',  edyr:      'Year',
-    edss:    'Screenshot',         edurl:     'Download URL',
+    edver:   'RPG Maker Version',  edyr:      'Year (e.g. 2004)',
+    edss:    'Screenshot URL',     edurl:     'Download URL',
     eddl:    'Download',           edtags:    'Tags',
     edcountry: 'Country of Origin',
     avail:   'Available',          na2:       'Lost Media',
-    ssurl:   'URL',                ssupload:  'Upload File',
     countryph: 'Type or select a country…',
     tagph:     'Select or add a tag…',
     newtag:    'New tag — will be added on save',
     tagsrequired: 'Select at least one tag.',
     notitle:  'Game requires a title.',
     invalidyear: 'Enter a valid year (e.g. 2004).',
+    uploadimage: 'Upload image',
+    deleteimage: 'Delete image',
 
     confirmclear:    'Abandon search?',
     confirmclearsub: 'Your current search will be cleared and you will return to the default view.',
     confirmkeep:     'Return',
     confirmclearbtn: 'Abandon',
+
+    // Warning div
+    pendingactions: 'Pending Actions',
+    gamedelwarn:  n => `Game "${n}" will be deleted`,
+    tagdelwarn:   n => `Tag "${n}" will be deleted from all games`,
+    tagrenamewarn:(o,n) => `Tag "${o}" will be renamed to "${n}"`,
+    tagmergewarn: (o,n) => `Tag "${o}" will be merged into "${n}"`,
+
+    // Version / tag management
+    addversion:   '+ Add Version',
+    vername:      'Name (long)',
+    verabbr:      'Abbreviation',
+    vericon:      'Icon',
+    deleteicon:   'Delete icon',
+    uploadicon:   'Upload icon',
+    cannotdelete: 'Cannot delete — games are using this entry.',
+    addtag:       '+ Add Tag',
+    renametag:    'Rename',
+    mergewarning: 'This tag already exists and will be merged.',
 
     contact:      'Contact us',
     contacttitle: 'Contact',
@@ -124,4 +168,7 @@ const T = {
   },
 };
 
-function i(key) { return T[S.lang][key] ?? key; }
+function i(key, ...args) {
+  const val = T[S.lang][key] ?? key;
+  return typeof val === 'function' ? val(...args) : val;
+}

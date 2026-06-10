@@ -7,7 +7,9 @@ function setText(id, txt) { const el = document.getElementById(id); if (el) el.t
 function renderAll() {
   document.body.classList.toggle('view-cards', S.view === 'cards');
   syncI18n();
+  renderWarningDiv();
   renderAdvancedSearch();
+  renderDevPanel();
   renderColumnsMenu();
   updateAdminBar();
 
@@ -38,7 +40,7 @@ function syncI18n() {
 
   document.getElementById('columns-button').textContent = `${i('cols')} ▾`;
   document.getElementById('edit-game-version').innerHTML =
-    VERSIONS.map(v => `<option value="${v.id}">${v.label}</option>`).join('');
+    VERSIONS.map(v => `<option value="${v.id}">${v.name || v.label}</option>`).join('');
 
   const langSel = document.getElementById('lang-select');
   if (langSel) langSel.value = S.lang;
@@ -48,6 +50,46 @@ function syncI18n() {
   document.getElementById('view-compact').classList.toggle('on', S.view === 'compact');
   document.getElementById('view-cards').classList.toggle('on',   S.view === 'cards');
   document.getElementById('admin-button').classList.toggle('admin-active', S.isAdmin);
+}
+
+// ── Warning Div ───────────────────────────────────────────
+
+function renderWarningDiv() {
+  const div = document.getElementById('warning-div');
+  if (!div) return;
+  if (!PENDING_ACTIONS.length) { div.style.display = 'none'; return; }
+
+  div.style.display = '';
+  const list = document.getElementById('warning-actions-list');
+  if (!list) return;
+
+  if (!S.warningExpanded) { list.style.display = 'none'; return; }
+  list.style.display = '';
+
+  list.innerHTML = PENDING_ACTIONS.map(a => {
+    const msLeft = Math.max(0, new Date(a.execute_at) - Date.now());
+    const mins   = Math.floor(msLeft / 60000);
+    const secs   = Math.floor((msLeft % 60000) / 1000);
+    const countdown = msLeft > 0 ? `${mins}:${String(secs).padStart(2,'0')}` : i('executing') || '…';
+    return `<div class="warning-action" id="wa-${a.id}">
+      <span class="warning-desc">${a.description}</span>
+      <span class="warning-countdown" id="wc-${a.id}">${countdown}</span>
+      <button class="warn-btn warn-ok"   onclick="executePendingAction('${a.id}')">[ok]</button>
+      <button class="warn-btn warn-undo" onclick="undoPendingAction('${a.id}')">[undo]</button>
+    </div>`;
+  }).join('');
+}
+
+// Called every second to update countdowns without full re-render.
+function tickWarningCountdowns() {
+  PENDING_ACTIONS.forEach(a => {
+    const el = document.getElementById(`wc-${a.id}`);
+    if (!el) return;
+    const msLeft = Math.max(0, new Date(a.execute_at) - Date.now());
+    const mins   = Math.floor(msLeft / 60000);
+    const secs   = Math.floor((msLeft % 60000) / 1000);
+    el.textContent = msLeft > 0 ? `${mins}:${String(secs).padStart(2,'0')}` : '…';
+  });
 }
 
 // ── Advanced Search Panel ─────────────────────────────────
@@ -72,7 +114,6 @@ function renderAdvancedSearch() {
   renderAdvancedChips();
 }
 
-// Renders a standard multi-select dropdown (versions and countries use this).
 function renderFilterDropdown({ ddId, lblId, options, selected, toggleFn, emptyKey, summaryFn }) {
   const dd = document.getElementById(ddId);
   const lb = document.getElementById(lblId);
@@ -87,7 +128,6 @@ function renderFilterDropdown({ ddId, lblId, options, selected, toggleFn, emptyK
   if (lb) lb.textContent = summaryFn();
 }
 
-// Tags dropdown — all tags treated uniformly, no Free special-casing.
 function renderTagsDropdown() {
   const dd = document.getElementById('ms-tags-dropdown');
   const lb = document.getElementById('ms-tags-label');
@@ -99,41 +139,42 @@ function renderTagsDropdown() {
     </div>`;
   }).join('') || `<div class="ms-empty">${i('alltags')}</div>`;
   dd.classList.toggle('open', S.openDropdown === 'ms-tags-dropdown');
-  // Label is static — always shows "Filter tags…" regardless of selection
   if (lb) lb.textContent = i('filtertags');
 }
 
 function renderAdvancedDropdowns() {
   renderFilterDropdown({
-    ddId:      'ms-version-dropdown',
-    lblId:     'ms-version-label',
+    ddId: 'ms-version-dropdown', lblId: 'ms-version-label',
     options:   getVersionsInUse().map(v => ({ value: v.id, label: v.label })),
     selected:  S.filters.versions,
     toggleFn:  'toggleVersion',
     emptyKey:  'allver',
-    // Label is static — always shows "Filter versions…" regardless of selection
     summaryFn: () => i('filterversions'),
   });
   renderFilterDropdown({
-    ddId:      'ms-country-dropdown',
-    lblId:     'ms-country-label',
-    options:   getCountriesInUse().map(c => ({ value: c, label: c })),
+    ddId: 'ms-country-dropdown', lblId: 'ms-country-label',
+    options:   getCountriesInUse().map(c => ({ value: c, label: countryWithFlag(c) })),
     selected:  S.filters.countries,
     toggleFn:  'toggleCountry',
     emptyKey:  'allcountries',
-    summaryFn: () => S.filters.countries.length ? S.filters.countries.join(', ') : i('allcountries'),
+    summaryFn: () => S.filters.countries.length
+      ? S.filters.countries.map(countryWithFlag).join(', ')
+      : i('allcountries'),
   });
   renderTagsDropdown();
 }
 
+// Chips order: [COUNTRY] [YEAR] [VERSION] [TAGS]
 function renderAdvancedChips() {
   const row = document.getElementById('advanced-chips-row');
   if (!row) return;
   const chips = [
+    ...S.filters.countries.map(c =>
+      makeChip(countryWithFlag(c), `toggleCountry('${c}')`, 'chip-country')),
+    ...S.filters.years.map(y =>
+      makeChip(String(y), `toggleYear(${y})`, 'chip-year')),
     ...S.filters.versions.map(vId =>
       makeChip(VERSIONS.find(v => v.id === vId)?.label || vId, `toggleVersion('${vId}')`, 'chip-version')),
-    ...S.filters.countries.map(c =>
-      makeChip(c, `toggleCountry('${c}')`, 'chip-country')),
     ...S.filters.tags.map(t =>
       makeChip(t, `toggleTag('${t}')`, 'chip-tag')),
   ];
@@ -141,18 +182,48 @@ function renderAdvancedChips() {
   row.style.display = chips.length ? 'flex' : 'none';
 }
 
+// ── Developer Panel ───────────────────────────────────────
+
+function renderDevPanel() {
+  const panel = document.getElementById('dev-panel');
+  if (!panel) return;
+
+  if (!S.activeDev) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+
+  // Collect all games attributed to this developer (handles multi-dev strings)
+  const devGames  = GAMES.filter(g => splitDev(g.developer).includes(S.activeDev));
+  const countries = [...new Set(devGames.map(g => g.country).filter(Boolean))];
+  const versions  = [...new Set(devGames.map(g => g.vId).filter(Boolean))];
+  const tags      = [...new Set(devGames.flatMap(g => g.tags))];
+
+  panel.innerHTML = `
+    <div class="dev-panel-header">
+      <div class="dev-panel-name">${S.activeDev}</div>
+      <button class="advanced-panel-close" onclick="S.activeDev=null;renderAll()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="dev-panel-country">${countries.map(countryWithFlag).join(' · ') || '—'}</div>
+    <div class="dev-panel-badges badge-wrapper">
+      ${versions.map(vId => versionBadge(vId)).join('')}
+      ${tags.map(tagBadge).join('')}
+    </div>`;
+}
+
 // ── Result count ──────────────────────────────────────────
 
 function updateResultCount(n) {
-  const el          = document.getElementById('results-count');
+  const el = document.getElementById('results-count');
   const isFiltering = S.filters.search || activeFilterCount() > 0;
-  el.textContent    = isFiltering ? i('found')(n) : '';
+  el.textContent = isFiltering ? i('found')(n) : '';
   el.classList.toggle('vis', isFiltering);
 }
 
-// ── Columns menu ──────────────────────────────────────────
+// ── Columns menu (hidden in cards view) ───────────────────
 
 function renderColumnsMenu() {
+  const wrapper = document.getElementById('columns-wrapper-el');
+  if (wrapper) wrapper.style.display = S.view === 'cards' ? 'none' : '';
+
   const labels = { developer: i('dev'), version: i('ver'), year: i('yr'), country: i('country'), tags: i('tags') };
   document.getElementById('columns-menu').innerHTML =
     Object.entries(labels)
@@ -168,15 +239,15 @@ function updateAdminBar() {
   if (S.isAdmin && S.session) setText('admin-email-label', S.session.user.email);
 }
 
-// ── Table ─────────────────────────────────────────────────
+// ── Table — new column order: TITLE|DEV|COUNTRY|YEAR|VER|TAGS|DL|ACTIONS ──
 
 function renderTableHeaders() {
   const cols = [
     { id: 'title',     label: i('title'),   cls: 'col-title sortable'  },
     S.cols.developer ? { id: 'developer', label: i('dev'),     cls: 'sortable'    } : null,
-    S.cols.version   ? { id: 'version',   label: i('ver'),     cls: ''            } : null,
-    S.cols.year      ? { id: 'year',      label: i('yr'),      cls: 'sortable'    } : null,
     S.cols.country   ? { id: 'country',   label: i('country'), cls: 'sortable'    } : null,
+    S.cols.year      ? { id: 'year',      label: i('yr'),      cls: 'sortable'    } : null,
+    S.cols.version   ? { id: 'version',   label: i('ver'),     cls: ''            } : null,
     S.cols.tags      ? { id: 'tags',      label: i('tags'),    cls: 'col-tags'    } : null,
     { id: 'download',   label: i('dl'),    cls: 'col-download'  },
     S.isAdmin        ? { id: 'actions',   label: i('actions'), cls: 'col-actions' } : null,
@@ -203,9 +274,9 @@ function gameRow(g) {
     onmouseleave="hideTooltip()">
     <td class="col-title">${g.title}</td>
     ${S.cols.developer ? `<td class="col-developer">${devLinks(g.developer)}</td>` : ''}
-    ${S.cols.version   ? `<td><div class="badge-wrapper">${versionBadge(g.vId)}</div></td>` : ''}
-    ${S.cols.year      ? `<td class="col-year col-search-link" data-search="${g.year}" onclick="event.stopPropagation();searchBy(this.dataset.search)">${g.year}</td>` : ''}
-    ${S.cols.country   ? `<td class="col-country col-search-link" data-search="${esc(g.country)}" onclick="event.stopPropagation();searchBy(this.dataset.search)">${g.country}</td>` : ''}
+    ${S.cols.country   ? `<td class="col-country col-search-link" data-search="${esc(g.country)}" onclick="event.stopPropagation();toggleCountry(this.dataset.search)">${countryWithFlag(g.country)}</td>` : ''}
+    ${S.cols.year      ? `<td class="col-year col-search-link" data-search="${g.year}" onclick="event.stopPropagation();toggleYear(parseInt(this.dataset.search))">${g.year}</td>` : ''}
+    ${S.cols.version   ? `<td><div class="badge-wrapper">${versionBadge(g.vId, true)}</div></td>` : ''}
     ${S.cols.tags      ? `<td class="col-tags"><div class="badge-wrapper">${g.tags.map(tagBadge).join('')}</div></td>` : ''}
     <td class="col-download"><div class="badge-wrapper">${downloadBadge(g)}</div></td>
     ${S.isAdmin ? `<td><div class="action-buttons">${adminBtns(g.id, true)}</div></td>` : ''}
@@ -226,19 +297,19 @@ function gameCard(g, idx) {
   const visible = g.tags.slice(0, 4);
   const extra   = g.tags.length - 4;
   const tagHtml = visible.map(tagBadge).join('') +
-    (extra > 0 ? `<span class="badge badge-tag" onclick="event.stopPropagation();openGameModal('${g.id}')" role="button" tabindex="0">${extra}+ tags</span>` : '');
+    (extra > 0 ? `<span class="badge badge-tag" onclick="event.stopPropagation();openGameModal('${g.id}')">${extra}+ tags</span>` : '');
 
-  return `<div class="card" style="animation-delay:${Math.min(idx * 25, 200)}ms" onclick="openGameModal('${g.id}')">
+  return `<div class="card" style="animation-delay:${Math.min(idx*25,200)}ms" onclick="openGameModal('${g.id}')">
     ${ss}
-    <div class="card-screenshot-fallback" style="${g.ss ? 'display:none' : 'display:flex'}" data-i18n="noss"></div>
+    <div class="card-screenshot-fallback" style="${g.ss?'display:none':'display:flex'}" data-i18n="noss"></div>
     <div class="card-body">
       <div class="card-title">${g.title}</div>
-      <div class="card-developer">${devLinks(g.developer)}<span class="card-dev-meta"> · ${g.year} · ${g.country}</span></div>
+      <div class="card-developer">${devLinks(g.developer)}<span class="card-dev-meta"> · ${g.year} · ${countryWithFlag(g.country)}</span></div>
       <div class="card-tags badge-wrapper">${tagHtml}</div>
     </div>
     <div class="card-footer">
       <div class="badge-wrapper">${versionBadge(g.vId)}</div>
-      <div style="display:flex;align-items:center;gap:5px">${adminBtns(g.id, true)}${downloadBadge(g)}</div>
+      <div style="display:flex;align-items:center;gap:5px">${adminBtns(g.id,true)}${downloadBadge(g)}</div>
     </div>
   </div>`;
 }
@@ -246,15 +317,11 @@ function gameCard(g, idx) {
 function renderCards(games) {
   const addBtn = S.isAdmin
     ? `<div class="card-add-button" onclick="openEdit(null)" role="button" tabindex="0">
-        <div class="card-add-content">
-          <span class="add-icon">＋</span>
-          <span class="add-label" data-i18n="addgame"></span>
-        </div>
+        <div class="card-add-content"><span class="add-icon">＋</span><span class="add-label" data-i18n="addgame"></span></div>
       </div>` : '';
-  const empty = games.length === 0
-    ? `<div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div>`
-    : games.map(gameCard).join('');
-  document.getElementById('cards-grid').innerHTML = addBtn + empty;
+  document.getElementById('cards-grid').innerHTML = addBtn +
+    (games.length ? games.map(gameCard).join('') :
+      `<div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div>`);
 }
 
 // ── Game Detail Modal ─────────────────────────────────────
@@ -262,7 +329,6 @@ function renderCards(games) {
 function openGameModal(gameId) {
   const g = GAMES.find(x => x.id === gameId);
   if (!g) return;
-
   S.activeModalGameId = gameId;
 
   const ssImg = document.getElementById('game-detail-screenshot');
@@ -272,41 +338,39 @@ function openGameModal(gameId) {
 
   setText('game-detail-title', g.title);
   setText('game-detail-id',    `#${g.id}`);
-
   _renderModalMeta(g);
   _renderModalTags(g);
 
   document.getElementById('game-detail-footer').innerHTML =
     `<div>${downloadBadge(g)}</div>
      ${S.isAdmin ? `<div class="action-buttons">
-       <button class="action-button" onclick="closeModal('game-detail-modal');openEdit('${g.id}')" title="${i('editgame')}">✏️</button>
-       <button class="action-button delete-button" onclick="closeModal('game-detail-modal');delGame('${g.id}')" title="Delete">🗑️</button>
+       <button class="action-button" onclick="closeModal('game-detail-modal');openEdit('${g.id}')">${i('editgame')} ✏️</button>
+       <button class="action-button delete-button" onclick="closeModal('game-detail-modal');delGame('${g.id}')">🗑️</button>
      </div>` : ''}`;
 
   openModal('game-detail-modal');
 }
 
 function _renderModalMeta(g) {
-  const esc = s => (s || '').replace(/"/g, '&quot;');
+  const esc = s => (s||'').replace(/"/g,'&quot;');
   document.getElementById('game-detail-meta').innerHTML = `
     <div class="game-detail-meta-row">
       <span class="gd-dev">${devLinks(g.developer)}</span>
       <span class="gd-sep">·</span>
       <span class="gd-year col-search-link" data-search="${g.year}"
-            onclick="searchBy(this.dataset.search)">${g.year || '—'}</span>
+            onclick="toggleYear(parseInt(this.dataset.search))">${g.year||'—'}</span>
       <span class="gd-sep">·</span>
       <span class="gd-country col-search-link" data-search="${esc(g.country)}"
-            onclick="searchBy(this.dataset.search)">${g.country || 'Unknown'}</span>
+            onclick="toggleCountry(this.dataset.search)">${countryWithFlag(g.country)||'Unknown'}</span>
     </div>`;
 }
 
-// Version badge appears first in the tags row (same ordering logic as chips).
+// Version badge appears first in the tags row (same ordering as chips).
 function _renderModalTags(g) {
   document.getElementById('game-detail-tags').innerHTML =
     `<div class="badge-wrapper">${versionBadge(g.vId)}${g.tags.map(tagBadge).join('')}</div>`;
 }
 
-// Refreshes interactive badge states in the detail modal when filters change.
 function refreshOpenModal() {
   if (!S.activeModalGameId) return;
   if (!document.getElementById('game-detail-modal')?.classList.contains('open')) return;

@@ -8,14 +8,6 @@ function onSearch(value) {
   _searchTimer = setTimeout(() => { S.filters.search = value; renderAll(); }, 200);
 }
 
-// Sets the search input and triggers a render immediately.
-// Used by clicking developer names, years, and country cells.
-function searchBy(term) {
-  S.filters.search = String(term);
-  document.getElementById('search').value = String(term);
-  renderAll();
-}
-
 // ── Advanced Search Panel ────────────────────────────────
 
 function toggleAdvancedSearch() {
@@ -32,20 +24,17 @@ function closeAdvancedPanel() {
   renderAll();
 }
 
-// Pure state mutation — no render. Callers decide when to render.
 function resetAdvancedFilters() {
   S.filters.versions  = [];
   S.filters.countries = [];
+  S.filters.years     = [];
   S.filters.tags      = [];
 }
 
-// Public: reset + render. Called by the Clear All button.
 function clearAdvancedFilters() { resetAdvancedFilters(); renderAll(); }
 
-// Confirm modal "Return" — dismisses the modal only; panel stays open.
-function keepAndClose() { closeModal('confirm-clear-modal'); }
+function keepAndClose()     { closeModal('confirm-clear-modal'); }
 
-// Confirm modal "Abandon" — clears everything and closes the panel.
 function confirmClearClose() {
   resetAdvancedFilters();
   S.advancedOpen = false;
@@ -54,7 +43,6 @@ function confirmClearClose() {
   renderAll();
 }
 
-// Toggle a multi-select dropdown. ddId is the full element ID.
 function toggleDropdown(ddId) {
   S.openDropdown = S.openDropdown === ddId ? null : ddId;
   renderAdvancedDropdowns();
@@ -70,10 +58,17 @@ function toggleVersion(vId) {
 
 function toggleCountry(country) {
   toggleInArray(S.filters.countries, country);
+  S.advancedOpen = true;
   renderAll();
 }
 
-// All tags are uniform — no special Free routing.
+// Year chips — selected by clicking a year cell in the table.
+function toggleYear(year) {
+  toggleInArray(S.filters.years, year);
+  S.advancedOpen = true;
+  renderAll();
+}
+
 function toggleTag(tag) {
   toggleInArray(S.filters.tags, tag);
   S.advancedOpen = true;
@@ -86,6 +81,22 @@ function clearFilters() {
   S.filters.search = '';
   document.getElementById('search').value = '';
   resetAdvancedFilters();
+  renderAll();
+}
+
+// ── Developer Panel ───────────────────────────────────────
+
+function toggleDev(devName) {
+  if (S.activeDev === devName) {
+    S.activeDev = null;
+  } else {
+    // Close game detail modal if open before showing dev panel
+    if (S.activeModalGameId) {
+      S.activeModalGameId = null;
+      closeModal('game-detail-modal');
+    }
+    S.activeDev = devName;
+  }
   renderAll();
 }
 
@@ -148,21 +159,28 @@ function setLang(lang) {
 function openModal(id)  { document.getElementById(id).classList.add('open');    }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
+// ── Warning div ──────────────────────────────────────────
+
+function toggleWarningExpand() {
+  S.warningExpanded = !S.warningExpanded;
+  const list = document.getElementById('warning-actions-list');
+  const btn  = document.getElementById('warning-toggle-btn');
+  if (list) list.style.display = S.warningExpanded ? '' : 'none';
+  if (btn)  btn.textContent    = S.warningExpanded ? '▾' : '▸';
+}
+
 // ── Tooltip ──────────────────────────────────────────────
 
 function showTooltip(e, row) {
   if (window.innerWidth < 800) return;
-  const ss    = row.dataset.ss || '';
-  const title = row.dataset.title || '';
+  const ss     = row.dataset.ss  || '';
+  const title  = row.dataset.title || '';
   const hasImg = ss !== '';
-
   document.getElementById('tooltip-image').style.display    = hasImg ? 'block' : 'none';
   document.getElementById('tooltip-fallback').style.display = hasImg ? 'none'  : 'block';
   if (hasImg) document.getElementById('tooltip-image').src  = ss;
-
   const titleEl = document.getElementById('tooltip-title');
   if (titleEl) titleEl.textContent = title;
-
   document.getElementById('tooltip').style.display = 'flex';
   _positionTooltip(e);
 }
@@ -186,9 +204,7 @@ function sendContact() {
   const email   = document.getElementById('contact-email').value.trim();
   const message = document.getElementById('contact-message').value.trim();
   if (!message) return;
-  const subject = encodeURIComponent('RPGMKBR — Contato');
-  const body    = encodeURIComponent(`De: ${name}${email ? ` <${email}>` : ''}\n\n${message}`);
-  window.location.href = `mailto:contact@rpgmkbr.com?subject=${subject}&body=${body}`;
+  window.location.href = `mailto:contact@rpgmkbr.com?subject=${encodeURIComponent('RPGMKBR — Contato')}&body=${encodeURIComponent(`De: ${name}${email ? ` <${email}>` : ''}\n\n${message}`)}`;
   closeModal('contact-modal');
 }
 
@@ -204,9 +220,9 @@ document.getElementById('login-password')
 document.addEventListener('click', e => {
   const colBtn  = document.getElementById('columns-button');
   const colMenu = document.getElementById('columns-menu');
-  if (colBtn && colMenu && !colBtn.contains(e.target) && !colMenu.contains(e.target)) {
+  if (colBtn && colMenu && !colBtn.contains(e.target) && !colMenu.contains(e.target))
     colMenu.classList.remove('open');
-  }
+
   if (S.openDropdown !== null) {
     const panel = document.getElementById('advanced-panel');
     if (panel && !panel.contains(e.target)) {
@@ -214,6 +230,7 @@ document.addEventListener('click', e => {
       renderAdvancedDropdowns();
     }
   }
+
   const editMs = document.getElementById('edit-tag-ms');
   const editDd = document.getElementById('edit-tag-dropdown');
   if (editMs && editDd && !editMs.contains(e.target)) editDd.classList.remove('open');
