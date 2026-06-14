@@ -1,7 +1,5 @@
 'use strict';
 
-// ── Utility ───────────────────────────────────────────────
-
 function toggleInArray(arr, item) {
   const idx = arr.indexOf(item);
   idx >= 0 ? arr.splice(idx, 1) : arr.push(item);
@@ -9,7 +7,8 @@ function toggleInArray(arr, item) {
 
 function activeFilterCount() {
   return S.filters.versions.length  + S.filters.countries.length +
-         S.filters.years.length     + S.filters.tags.length;
+         S.filters.years.length     + S.filters.tags.length +
+         S.filters.fanLangs.length;
 }
 
 // ── Developer string helpers ──────────────────────────────
@@ -18,7 +17,6 @@ function splitDev(dev) {
   return (dev || '').split(';').map(s => s.trim()).filter(Boolean);
 }
 
-// Each part is a clickable span that opens the dev panel.
 function devLinks(dev) {
   const parts = splitDev(dev);
   if (!parts.length) return '—';
@@ -44,25 +42,45 @@ function adminBtns(gameId, stopProp) {
 }
 
 function downloadBadge(g) {
-  if (!g.url) return `<span class="badge badge-download badge-unavailable">❌ ${i('na')}</span>`;
-  const isSteam = g.url.includes('store.steampowered.com');
-  const isItch  = g.url.includes('itch.io');
-  const label   = isSteam ? 'Steam' : isItch ? 'itch.io' : `⬇ ${i('dl')}`;
-  const cls     = isSteam ? 'badge-steam' : isItch ? 'badge-itchio' : 'badge-free';
-  return `<a href="${g.url}" target="_blank" rel="noopener"
-    class="badge badge-download ${cls}" onclick="event.stopPropagation()">${label}</a>`;
+  const hasSource  = !!g.url;
+  const hasArchive = !!g.archiveUrl;
+
+  if (!hasSource && !hasArchive) {
+    return `<span class="badge badge-download badge-unavailable">❌ ${i('na')}</span>`;
+  }
+
+  let html = '';
+
+  if (hasSource) {
+    const isSteam = g.url.includes('store.steampowered.com');
+    const isItch  = g.url.includes('itch.io');
+    const label   = isSteam ? 'Steam' : isItch ? 'itch.io' : `⬇ ${i('dl')}`;
+    const cls     = isSteam ? 'badge-steam' : isItch ? 'badge-itchio' : 'badge-free';
+    html += `<a href="${g.url}" target="_blank" rel="noopener"
+      class="badge badge-download ${cls}" onclick="event.stopPropagation()">${label}</a>`;
+  }
+
+  if (hasArchive) {
+    const label = hasSource ? '📦' : `📦 Archive`;
+    const cls   = hasSource ? 'badge-archive-icon' : 'badge-archive';
+    html += `<a href="${g.archiveUrl}" target="_blank" rel="noopener"
+      class="badge badge-download ${cls}" onclick="event.stopPropagation()">${label}</a>`;
+  }
+
+  return html;
 }
 
-// showIcon=true renders the icon in the badge (table column only).
+// Version as a clickable badge using the full name.
+// showIcon=true renders the icon — used only in the table cell.
 function versionBadge(vId, showIcon = false) {
   const v = VERSIONS.find(v => v.id === vId);
   if (!v) return '';
-  const active  = S.filters.versions.includes(vId);
+  const active   = S.filters.versions.includes(vId);
   const iconHtml = (showIcon && v.iconUrl)
     ? `<img src="${v.iconUrl}" class="version-icon" alt=""/> ` : '';
   return `<span class="badge badge-version ${active ? 'active-filter' : ''}"
     onclick="event.stopPropagation();toggleVersion('${vId}')"
-    role="button" tabindex="0">${iconHtml}${v.label}</span>`;
+    role="button" tabindex="0">${iconHtml}${v.name}</span>`;
 }
 
 function tagBadge(tagName) {
@@ -81,16 +99,19 @@ function filterGames() {
   return GAMES.filter(g => {
     if (f.search) {
       const q = f.search.toLowerCase();
-      if (!g.title.toLowerCase().includes(q)     &&
-          !g.developer.toLowerCase().includes(q) &&
-          !String(g.year).includes(q)            &&
-          !g.country.toLowerCase().includes(q)   &&
-          !(VERSIONS.find(v => v.id === g.vId)?.label.toLowerCase().includes(q)) &&
+      if (!g.title.toLowerCase().includes(q)      &&
+          !g.developer.toLowerCase().includes(q)  &&
+          !String(g.year).includes(q)             &&
+          !g.country.toLowerCase().includes(q)    &&
+          !(g.fanLang?.toLowerCase().includes(q)) &&
+          !(g.fanDev?.toLowerCase().includes(q))  &&
+          !(VERSIONS.find(v => v.id === g.vId)?.name.toLowerCase().includes(q)) &&
           !g.tags.some(t => t.toLowerCase().includes(q))) return false;
     }
-    if (f.versions.length  && !f.versions.includes(g.vId))          return false;
-    if (f.countries.length && !f.countries.includes(g.country))      return false;
-    if (f.years.length     && !f.years.includes(g.year))             return false;
+    if (f.versions.length  && !f.versions.includes(g.vId))       return false;
+    if (f.countries.length && !f.countries.includes(g.country))   return false;
+    if (f.years.length     && !f.years.includes(g.year))          return false;
+    if (f.fanLangs.length  && !f.fanLangs.includes(g.fanLang))    return false;
     if (f.tags.length) {
       const ok = f.tagMode === 'or'
         ? f.tags.some(t  => g.tags.includes(t))
@@ -111,6 +132,7 @@ function sortGames(games) {
     if      (col === 'developer') { av = a.developer.toLowerCase(); bv = b.developer.toLowerCase(); }
     else if (col === 'year')      { av = a.year;                    bv = b.year;                    }
     else if (col === 'country')   { av = a.country.toLowerCase();   bv = b.country.toLowerCase();   }
+    else if (col === 'fanLang')   { av = (a.fanLang||'').toLowerCase(); bv = (b.fanLang||'').toLowerCase(); }
     else                          { av = a.title.toLowerCase();     bv = b.title.toLowerCase();     }
     if (av !== bv) return av < bv ? -sign : sign;
     const ta = a.title.toLowerCase(), tb = b.title.toLowerCase();

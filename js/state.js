@@ -1,27 +1,28 @@
 'use strict';
 
 let S = {
-  lang:             'pt',
-  theme:            'light',
-  view:             'compact',
-  isAdmin:          false,
-  loading:          true,
-  session:          null,
-  advancedOpen:     false,
-  openDropdown:     null,
+  lang:              'pt',
+  theme:             'light',
+  view:              'compact',
+  isAdmin:           false,
+  loading:           true,
+  session:           null,
+  advancedOpen:      false,
+  openDropdown:      null,
   activeModalGameId: null,
-  activeDev:        null,     // dev name shown in dev panel; null = hidden
-  warningExpanded:  true,     // warning div expand/collapse state
+  activeDev:         null,
+  warningExpanded:   true,
 
   sort: { col: 'title', dir: 'asc' },
 
   filters: {
-    search:   '',
-    versions: [],
+    search:    '',
+    versions:  [],
     countries: [],
-    years:    [],             // selected years (OR logic, same as versions/countries)
-    tags:     [],
-    tagMode:  'and',
+    years:     [],
+    tags:      [],
+    tagMode:   'and',
+    fanLangs:  [],
   },
 
   cols: {
@@ -30,5 +31,7 @@ let S = {
     year:      true,
     country:   true,
     tags:      true,
+    fanLang:   true,
+    fanDev:    true,
   },
 };

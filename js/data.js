@@ -1,10 +1,7 @@
 'use strict';
 
-// ── Countries — [name, flag_emoji] pairs (Option C) ───────
-// Flag lookup uses this array; the DB stores only the plain name.
-// To update a flag, edit the second element of the pair here.
 const COUNTRIES = [
-  ['Unknown', ''],
+  ['Unknown',''],
   ['Afghanistan','🇦🇫'],['Albania','🇦🇱'],['Algeria','🇩🇿'],['Andorra','🇦🇩'],
   ['Angola','🇦🇴'],['Argentina','🇦🇷'],['Armenia','🇦🇲'],['Australia','🇦🇺'],
   ['Austria','🇦🇹'],['Azerbaijan','🇦🇿'],['Bahamas','🇧🇸'],['Bahrain','🇧🇭'],
@@ -51,13 +48,20 @@ const COUNTRIES = [
   ['Yemen','🇾🇪'],['Zambia','🇿🇲'],['Zimbabwe','🇿🇼'],
 ];
 
-// ── Runtime data — populated by loadData() ────────────────
+// Small, hardcoded set of fan-translation languages.
+// Add or remove entries here to update the dropdown in Add Game.
+const FAN_LANGUAGES = [
+  'English','Portuguese','Spanish','French','German','Italian',
+  'Russian','Japanese','Korean','Chinese (Simplified)','Chinese (Traditional)',
+  'Arabic','Polish','Dutch','Swedish','Norwegian','Danish',
+  'Finnish','Czech','Hungarian','Romanian','Turkish','Greek','Ukrainian',
+];
+
 let GAMES           = [];
 let VERSIONS        = [];
 let TAGS            = [];
-let PENDING_ACTIONS = [];  // deferred admin actions shown in warning div
+let PENDING_ACTIONS = [];
 
-// ── Cached derived lists — rebuilt after every loadData() ─
 let _versionsInUse  = [];
 let _countriesInUse = [];
 let _devList        = [];
@@ -65,8 +69,6 @@ let _devList        = [];
 function getVersionsInUse()  { return _versionsInUse;  }
 function getCountriesInUse() { return _countriesInUse; }
 function getDevList()        { return _devList;        }
-
-// ── Country flag helpers ──────────────────────────────────
 
 function countryFlag(name) {
   const entry = COUNTRIES.find(([n]) => n === name);
@@ -79,8 +81,6 @@ function countryWithFlag(name) {
   return flag ? `${flag} ${name}` : name;
 }
 
-// ── Supabase fetch ────────────────────────────────────────
-
 async function loadData() {
   S.loading = true;
 
@@ -89,35 +89,36 @@ async function loadData() {
     sb.from('versions').select('*'),
     sb.from('tags').select('*').order('name', { ascending: true }),
   ];
-
-  // Pending actions only readable by authenticated admins (RLS enforced)
   if (S.isAdmin) {
     queries.push(sb.from('pending_actions').select('*').order('created_at', { ascending: true }));
   }
 
   const [gRes, vRes, tRes, pRes] = await Promise.all(queries);
 
-  if (gRes.error) console.error('Games load error:',    gRes.error.message);
-  if (vRes.error) console.error('Versions load error:', vRes.error.message);
-  if (tRes.error) console.error('Tags load error:',     tRes.error.message);
+  if (gRes.error) console.error('Games:',    gRes.error.message);
+  if (vRes.error) console.error('Versions:', vRes.error.message);
+  if (tRes.error) console.error('Tags:',     tRes.error.message);
 
   GAMES = (gRes.data || []).map(row => ({
     id:         row.id,
-    title:      row.title     || '',
-    developer:  row.developer || '',
+    title:      row.title      || '',
+    developer:  row.developer  || '',
     vId:        row.v_id,
     year:       row.year,
-    country:    row.country   || 'Unknown',
-    tags:       row.tags      || [],
-    ss:         row.ss        || null,
-    url:        row.url       || null,
+    country:    row.country    || 'Unknown',
+    tags:       row.tags       || [],
+    ss:         row.ss         || null,
+    url:        row.url        || null,
+    archiveUrl: row.archive_url || null,
+    fanLang:    row.fan_lang   || null,
+    fanDev:     row.fan_dev    || null,
     created_at: row.created_at,
   }));
 
   VERSIONS = (vRes.data || []).map(row => ({
     id:      row.id,
-    name:    row.name    || row.label,  // long form; falls back to label if not set
-    label:   row.label,                 // abbreviation shown in badges
+    name:    row.name  || row.label,
+    label:   row.label,
     iconUrl: row.icon_url || null,
     bg: row.bg, tx: row.tx, bd: row.bd,
   }));
@@ -132,14 +133,13 @@ async function loadData() {
   PENDING_ACTIONS = ((pRes?.data) || []).map(row => ({
     id:          row.id,
     type:        row.type,
-    payload:     row.payload || {},
+    payload:     row.payload     || {},
     description: row.description,
     execute_at:  row.execute_at,
     created_by:  row.created_by,
     created_at:  row.created_at,
   }));
 
-  // Rebuild derived caches
   const usedVIds  = new Set(GAMES.map(g => g.vId).filter(Boolean));
   _versionsInUse  = VERSIONS.filter(v => usedVIds.has(v.id));
   _countriesInUse = [...new Set(GAMES.map(g => g.country).filter(Boolean))].sort();

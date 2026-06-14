@@ -1,6 +1,6 @@
 'use strict';
 
-// ── Countdown timer — change this value to adjust the delay ──
+// ── Change this value to adjust the deferred action delay ─
 const PENDING_ACTION_DELAY_MS = 60 * 60 * 1000; // 1 hour
 
 const editForm = { tags: [], tagFilter: '' };
@@ -42,7 +42,7 @@ function openEdit(gameId) {
   document.getElementById('country-datalist').innerHTML =
     COUNTRIES.map(([name]) => `<option value="${name}"/>`).join('');
 
-  editForm.tags = (g?.tags || []).map(name => ({ name, isNew: false }));
+  editForm.tags      = (g?.tags || []).map(name => ({ name, isNew: false }));
   editForm.tagFilter = '';
 
   document.getElementById('edit-game-id').value        = gameId || '';
@@ -52,16 +52,16 @@ function openEdit(gameId) {
   document.getElementById('edit-game-year').value      = g?.year      || '';
   document.getElementById('edit-game-country').value   = g?.country   || 'Unknown';
   document.getElementById('edit-tag-input').value      = '';
+  document.getElementById('edit-fan-lang').value       = g?.fanLang   || '';
+  document.getElementById('edit-fan-dev').value        = g?.fanDev    || '';
 
-  // Screenshot — reworked: single URL field + upload/delete button
   _initScreenshotField(g?.ss || null);
+  _initDownloadFields(g);
 
-  document.getElementById(g?.url ? 'download-available' : 'download-unavailable').checked = true;
-  document.getElementById('edit-download-url').value = g?.url || '';
-  toggleDownloadField();
-
-  ['edit-tag-error','edit-title-error','edit-year-error'].forEach(id => {
-    document.getElementById(id).style.display = 'none';
+  ['edit-tag-error','edit-title-error','edit-year-error',
+   'edit-archive-error','edit-source-error','edit-fandev-error'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
   });
 
   renderEditTagChips();
@@ -70,12 +70,31 @@ function openEdit(gameId) {
   openModal('edit-modal');
 }
 
-function toggleDownloadField() {
-  const type = document.querySelector('input[name="download-type"]:checked')?.value;
-  document.getElementById('edit-download-url').style.display = type === 'available' ? 'block' : 'none';
+// ── Download fields ───────────────────────────────────────
+
+function _initDownloadFields(g) {
+  const hasUrl     = !!g?.url;
+  const hasArchive = !!g?.archiveUrl;
+  const isLost     = !hasUrl && !hasArchive;
+
+  document.getElementById('download-available').checked   = !isLost;
+  document.getElementById('download-unavailable').checked = isLost;
+  document.getElementById('edit-download-url').value      = g?.url        || '';
+  document.getElementById('edit-archive-url').value       = g?.archiveUrl || '';
+  toggleDownloadField();
 }
 
-// ── Screenshot — reworked ─────────────────────────────────
+function toggleDownloadField() {
+  const isAvailable = document.getElementById('download-available').checked;
+  document.getElementById('download-available-fields').style.display = isAvailable ? '' : 'none';
+}
+
+function _validateArchiveUrl(url) {
+  if (!url) return true;
+  try { return new URL(url).hostname.includes('archive.org'); } catch { return false; }
+}
+
+// ── Screenshot ────────────────────────────────────────────
 
 function _initScreenshotField(existingUrl) {
   const input = document.getElementById('edit-screenshot-url');
@@ -111,10 +130,7 @@ async function _uploadScreenshot(file) {
 async function _deleteScreenshotFromStorage(url) {
   if (!url) return;
   const match = url.match(/\/screenshots\/([^?]+)/);
-  if (match) {
-    const { error } = await sb.storage.from('screenshots').remove([`screenshots/${match[1]}`]);
-    if (error) console.error('Screenshot delete failed:', error.message);
-  }
+  if (match) await sb.storage.from('screenshots').remove([`screenshots/${match[1]}`]);
 }
 
 // ── Edit modal tag multi-select ───────────────────────────
@@ -129,14 +145,14 @@ function renderEditTagChips() {
 
 function renderEditTagDropdown(filter) {
   if (filter !== undefined) editForm.tagFilter = filter;
-  const dd = document.getElementById('edit-tag-dropdown');
+  const dd      = document.getElementById('edit-tag-dropdown');
   if (!dd) return;
-  const sel = editForm.tags.map(t => t.name);
-  const q   = editForm.tagFilter.toLowerCase();
+  const sel     = editForm.tags.map(t => t.name);
+  const q       = editForm.tagFilter.toLowerCase();
   const matches = TAGS.filter(t => t.name.toLowerCase().includes(q) && !sel.includes(t.name));
-  dd.innerHTML = matches.map(t =>
-    `<div class="ms-option" onclick="toggleEditTag('${t.name}',false)">${t.name}</div>`
-  ).join('') || (q ? `<div class="ms-empty">↵ Enter to add "<strong>${editForm.tagFilter}</strong>"</div>` : '');
+  dd.innerHTML  = matches.map(t =>
+    `<div class="ecb-option" onclick="toggleEditTag('${t.name}',false)">${t.name}</div>`
+  ).join('') || (q ? `<div class="ecb-empty">↵ Enter to add "<strong>${editForm.tagFilter}</strong>"</div>` : '');
   dd.classList.toggle('open', matches.length > 0 || q.length > 0);
 }
 
@@ -183,13 +199,13 @@ function removeEditTag(name) {
 async function saveGame() {
   let valid = true;
 
-  const title   = document.getElementById('edit-game-title').value.trim();
+  const title    = document.getElementById('edit-game-title').value.trim();
   const titleErr = document.getElementById('edit-title-error');
   if (!title) { titleErr.textContent = i('notitle'); titleErr.style.display = 'block'; valid = false; }
-  else           titleErr.style.display = 'none';
+  else titleErr.style.display = 'none';
 
-  const yearVal  = document.getElementById('edit-game-year').value.trim();
-  const yearErr  = document.getElementById('edit-year-error');
+  const yearVal = document.getElementById('edit-game-year').value.trim();
+  const yearErr = document.getElementById('edit-year-error');
   if (!/^(19|20)\d{2}$/.test(yearVal)) {
     yearErr.textContent = i('invalidyear'); yearErr.style.display = 'block';
     document.getElementById('edit-game-year').classList.add('field-error');
@@ -201,33 +217,68 @@ async function saveGame() {
 
   const tagErr = document.getElementById('edit-tag-error');
   if (!editForm.tags.length) { tagErr.style.display = 'block'; valid = false; }
-  else                         tagErr.style.display = 'none';
+  else tagErr.style.display = 'none';
+
+  const isAvailable  = document.getElementById('download-available').checked;
+  const sourceUrl    = document.getElementById('edit-download-url').value.trim();
+  const archiveUrl   = document.getElementById('edit-archive-url').value.trim();
+  const archiveErr   = document.getElementById('edit-archive-error');
+  const sourceErr    = document.getElementById('edit-source-error');
+
+  if (isAvailable) {
+    if (!sourceUrl && !archiveUrl) {
+      sourceErr.textContent = i('sourceOrArchive');
+      sourceErr.style.display = 'block'; valid = false;
+    } else {
+      sourceErr.style.display = 'none';
+    }
+    if (archiveUrl && !_validateArchiveUrl(archiveUrl)) {
+      archiveErr.textContent = i('invalidarchive');
+      archiveErr.style.display = 'block'; valid = false;
+    } else {
+      archiveErr.style.display = 'none';
+    }
+  }
+
+  const fanLang    = document.getElementById('edit-fan-lang').value.trim();
+  const fanDev     = document.getElementById('edit-fan-dev').value.trim();
+  const fanDevErr  = document.getElementById('edit-fandev-error');
+  if (fanLang && !fanDev) {
+    fanDevErr.textContent = i('fanDevRequired');
+    fanDevErr.style.display = 'block'; valid = false;
+  } else {
+    fanDevErr.style.display = 'none';
+  }
 
   if (!valid) return;
 
+  showLoading();
+
   const newTags = editForm.tags.filter(t => t.isNew);
   if (newTags.length) {
-    const { error } = await sb.from('tags').upsert(newTags.map(t => ({ name: t.name })), { onConflict: 'name' });
-    if (error) console.error('Tag insert failed:', error.message);
+    await sb.from('tags').upsert(newTags.map(t => ({ name: t.name })), { onConflict: 'name' });
   }
 
   const ss     = document.getElementById('edit-screenshot-url').value.trim() || null;
-  const dlType = document.querySelector('input[name="download-type"]:checked')?.value;
   const gameId = document.getElementById('edit-game-id').value;
 
   const game = {
     title,
-    developer: document.getElementById('edit-game-developer').value.trim() || '',
-    v_id:      document.getElementById('edit-game-version').value || VERSIONS[0]?.id || '',
-    year:      parseInt(yearVal),
-    country:   document.getElementById('edit-game-country').value.trim() || 'Unknown',
-    tags:      editForm.tags.map(t => t.name),
+    developer:   document.getElementById('edit-game-developer').value.trim() || '',
+    v_id:        document.getElementById('edit-game-version').value           || VERSIONS[0]?.id || '',
+    year:        parseInt(yearVal),
+    country:     document.getElementById('edit-game-country').value.trim()    || 'Unknown',
+    tags:        editForm.tags.map(t => t.name),
     ss,
-    url: dlType === 'available' ? (document.getElementById('edit-download-url').value.trim() || null) : null,
+    url:         isAvailable ? (sourceUrl  || null) : null,
+    archive_url: isAvailable ? (archiveUrl || null) : null,
+    fan_lang:    fanLang || null,
+    fan_dev:     fanDev  || null,
   };
   if (gameId) game.id = gameId;
 
   const { error } = await sb.from('games').upsert(game);
+  hideLoading();
   if (error) { console.error('Save failed:', error.message); return; }
 
   await cleanupUnusedTags();
@@ -236,29 +287,27 @@ async function saveGame() {
   renderAll();
 }
 
-// ── Delete game — deferred via pending_actions ────────────
+// ── Delete game — deferred ────────────────────────────────
 
 async function delGame(gameId) {
   const g = GAMES.find(x => x.id === gameId);
   if (!confirm(`${i('confirmdel')}\n"${g?.title}"`)) return;
-  await addPendingAction('game_delete', { gameId, gameTitle: g?.title },
-    i('gamedelwarn', g?.title || gameId));
+  await addPendingAction('game_delete', { gameId, gameTitle: g?.title }, i('gamedelwarn', g?.title || gameId));
   closeModal('game-detail-modal');
   S.activeModalGameId = null;
-  // Note: game stays visible until countdown expires
 }
 
 // ── Unused tag cleanup ────────────────────────────────────
 
 async function cleanupUnusedTags() {
   const { data: allGames } = await sb.from('games').select('tags');
-  const used = new Set((allGames || []).flatMap(g => g.tags || []));
+  const used   = new Set((allGames || []).flatMap(g => g.tags || []));
   const { data: allTags } = await sb.from('tags').select('name');
   const unused = (allTags || []).filter(t => !used.has(t.name)).map(t => t.name);
   if (unused.length) await sb.from('tags').delete().in('name', unused);
 }
 
-// ── Pending Actions (Warning Div) ─────────────────────────
+// ── Pending actions ───────────────────────────────────────
 
 async function addPendingAction(type, payload, description) {
   const execute_at = new Date(Date.now() + PENDING_ACTION_DELAY_MS).toISOString();
@@ -272,10 +321,12 @@ async function addPendingAction(type, payload, description) {
 async function executePendingAction(id) {
   const action = PENDING_ACTIONS.find(a => a.id === id);
   if (!action) return;
+  showLoading();
   await _performAction(action);
   await sb.from('pending_actions').delete().eq('id', id);
   await cleanupUnusedTags();
   await loadData();
+  hideLoading();
   renderAll();
 }
 
@@ -314,7 +365,6 @@ async function _performAction(action) {
   }
 }
 
-// Runs every 30 seconds to execute expired pending actions.
 async function checkAndExecutePendingActions() {
   if (!S.isAdmin || !PENDING_ACTIONS.length) return;
   const expired = PENDING_ACTIONS.filter(a => new Date(a.execute_at) <= new Date());
@@ -333,62 +383,104 @@ setInterval(tickWarningCountdowns, 1000);
 
 // ── Manage Versions ───────────────────────────────────────
 
-function openManageVersions() {
-  renderVersionsList();
-  openModal('manage-versions-modal');
-}
+function openManageVersions() { renderVersionsList(); openModal('manage-versions-modal'); }
 
 function renderVersionsList() {
   const list = document.getElementById('versions-list');
   if (!list) return;
   list.innerHTML = VERSIONS.map(v => {
-    const inUse = GAMES.some(g => g.vId === v.id);
+    const inUse   = GAMES.some(g => g.vId === v.id);
+    const iconBtn = v.iconUrl
+      ? `<button class="icon-button" onclick="deleteVersionIcon('${v.id}','${v.iconUrl}')" title="${i('deleteicon')}">🗑️</button>
+         <img src="${v.iconUrl}" class="version-icon-preview" alt=""/>`
+      : `<button class="icon-button" onclick="document.getElementById('vicon-input-${v.id}').click()" title="${i('uploadicon')}">📤</button>`;
+
     return `<div class="manage-row" id="vrow-${v.id}">
-      <input class="manage-input" id="vname-${v.id}"  value="${(v.name||'').replace(/"/g,'&quot;')}"  placeholder="${i('vername')}"/>
-      <input class="manage-input" id="vlabel-${v.id}" value="${(v.label||'').replace(/"/g,'&quot;')}" placeholder="${i('verabbr')}" style="width:90px"/>
-      <div class="version-icon-cell">
-        ${v.iconUrl ? `<img src="${v.iconUrl}" class="version-icon-preview" alt=""/>` : ''}
-        <button class="button-base" onclick="handleVersionIconBtn('${v.id}','${v.iconUrl||''}')">
-          ${v.iconUrl ? i('deleteicon') : i('uploadicon')}
-        </button>
+      <div class="ver-view" id="vview-${v.id}">
+        ${iconBtn}
         <input type="file" id="vicon-input-${v.id}" accept="image/*" style="display:none"
                onchange="uploadVersionIcon('${v.id}',this)"/>
+        <span class="manage-ver-name">${v.name}</span>
+        <span class="manage-ver-label badge badge-version">${v.label}</span>
+        <span class="manage-spacer"></span>
+        <button class="icon-button" onclick="startEditVersion('${v.id}')" title="Edit">✏️</button>
       </div>
-      <button class="button-base" onclick="saveVersion('${v.id}')">✔</button>
-      <span class="manage-warn" id="vwarn-${v.id}" style="display:none;color:#c0392b">${i('cannotdelete')}</span>
-      <button class="action-button delete-button" onclick="deleteVersion('${v.id}')" ${inUse?'disabled title="'+i('cannotdelete')+'"':''}>🗑️</button>
+      <div class="ver-edit" id="vedit-${v.id}" style="display:none">
+        <button class="icon-button" onclick="document.getElementById('vicon-input-edit-${v.id}').click()" title="${i('uploadicon')}">📤</button>
+        <input type="file" id="vicon-input-edit-${v.id}" accept="image/*" style="display:none"
+               onchange="uploadVersionIcon('${v.id}',this)"/>
+        <input class="manage-input" id="vname-${v.id}" value="${(v.name||'').replace(/"/g,'&quot;')}" style="flex:2"/>
+        <button class="icon-button manage-delete-btn" id="vdel-${v.id}"
+                onclick="handleVersionDeleteClick('${v.id}','${inUse}')" title="Delete">🗑️</button>
+        <span class="manage-warn" id="vwarn-${v.id}" style="display:none">${i('deleteconfirm')}</span>
+        <button class="icon-button" onclick="saveVersion('${v.id}')" title="Confirm">✔️</button>
+        <button class="icon-button" onclick="cancelEditVersion('${v.id}')" title="Cancel">✕</button>
+      </div>
     </div>`;
   }).join('');
 }
 
+function startEditVersion(vId) {
+  document.getElementById(`vview-${vId}`).style.display = 'none';
+  document.getElementById(`vedit-${vId}`).style.display = '';
+  document.getElementById(`vname-${vId}`)?.focus();
+}
+
+function cancelEditVersion(vId) {
+  document.getElementById(`vedit-${vId}`).style.display = 'none';
+  document.getElementById(`vview-${vId}`).style.display = '';
+}
+
+// Delete button requires two clicks when in use.
+const _verDeleteClickState = {};
+function handleVersionDeleteClick(vId, inUse) {
+  if (inUse === 'true') {
+    const warn = document.getElementById(`vwarn-${vId}`);
+    if (warn) { warn.textContent = i('cannotdelete'); warn.style.display = ''; setTimeout(() => warn.style.display = 'none', 3000); }
+    return;
+  }
+  if (!_verDeleteClickState[vId]) {
+    _verDeleteClickState[vId] = true;
+    const warn = document.getElementById(`vwarn-${vId}`);
+    if (warn) { warn.textContent = i('deleteconfirm'); warn.style.display = ''; }
+    setTimeout(() => { _verDeleteClickState[vId] = false; const w = document.getElementById(`vwarn-${vId}`); if(w) w.style.display='none'; }, 3000);
+  } else {
+    _verDeleteClickState[vId] = false;
+    deleteVersion(vId);
+  }
+}
+
 async function saveVersion(vId) {
-  const name  = document.getElementById(`vname-${vId}`)?.value.trim();
-  const label = document.getElementById(`vlabel-${vId}`)?.value.trim();
-  if (!name || !label) return;
-  const { error } = await sb.from('versions').update({ name, label }).eq('id', vId);
+  const name = document.getElementById(`vname-${vId}`)?.value.trim();
+  if (!name) return;
+  showLoading();
+  const { error } = await sb.from('versions').update({ name }).eq('id', vId);
+  hideLoading();
   if (error) { console.error('Version save failed:', error.message); return; }
   await loadData();
   renderVersionsList();
   renderAll();
 }
 
-async function handleVersionIconBtn(vId, existingUrl) {
-  if (existingUrl) {
-    await deleteVersionIcon(vId, existingUrl);
-  } else {
-    document.getElementById(`vicon-input-${vId}`)?.click();
-  }
+async function deleteVersion(vId) {
+  showLoading();
+  await sb.from('versions').delete().eq('id', vId);
+  hideLoading();
+  await loadData();
+  renderVersionsList();
+  renderAll();
 }
 
 async function uploadVersionIcon(vId, fileInput) {
   if (!fileInput.files.length) return;
   const file = fileInput.files[0];
   const path = `version-icons/${vId}.${file.name.split('.').pop()}`;
+  showLoading();
   const { error: upErr } = await sb.storage.from('screenshots').upload(path, file, { upsert: true });
-  if (upErr) { console.error('Icon upload failed:', upErr.message); return; }
+  if (upErr) { hideLoading(); console.error('Icon upload failed:', upErr.message); return; }
   const iconUrl = sb.storage.from('screenshots').getPublicUrl(path).data.publicUrl;
-  const { error } = await sb.from('versions').update({ icon_url: iconUrl }).eq('id', vId);
-  if (error) { console.error('Icon URL save failed:', error.message); return; }
+  await sb.from('versions').update({ icon_url: iconUrl }).eq('id', vId);
+  hideLoading();
   await loadData();
   renderVersionsList();
 }
@@ -401,28 +493,15 @@ async function deleteVersionIcon(vId, iconUrl) {
   renderVersionsList();
 }
 
-async function deleteVersion(vId) {
-  const inUse = GAMES.some(g => g.vId === vId);
-  if (inUse) {
-    const warn = document.getElementById(`vwarn-${vId}`);
-    if (warn) { warn.style.display = ''; setTimeout(() => warn.style.display = 'none', 3000); }
-    return;
-  }
-  await sb.from('versions').delete().eq('id', vId);
-  await loadData();
-  renderVersionsList();
-  renderAll();
-}
-
 async function addVersion() {
-  const name  = document.getElementById('new-ver-name')?.value.trim();
-  const label = document.getElementById('new-ver-abbr')?.value.trim();
-  if (!name || !label) return;
-  const id = label.toLowerCase().replace(/\s+/g,'');
-  const { error } = await sb.from('versions').insert({ id, name, label });
+  const name = document.getElementById('new-ver-name')?.value.trim();
+  if (!name) return;
+  const id = name.toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');
+  showLoading();
+  const { error } = await sb.from('versions').insert({ id, name, label: id });
+  hideLoading();
   if (error) { console.error('Add version failed:', error.message); return; }
   document.getElementById('new-ver-name').value = '';
-  document.getElementById('new-ver-abbr').value = '';
   await loadData();
   renderVersionsList();
   renderAll();
@@ -430,38 +509,44 @@ async function addVersion() {
 
 // ── Manage Tags ───────────────────────────────────────────
 
-function openManageTags() {
+let _tagFilter = '';
+
+function openManageTags() { _tagFilter = ''; renderTagsList(); openModal('manage-tags-modal'); }
+
+function filterTagsList(q) {
+  _tagFilter = q.toLowerCase();
   renderTagsList();
-  openModal('manage-tags-modal');
 }
 
 function renderTagsList() {
-  const list = document.getElementById('tags-list');
+  const list     = document.getElementById('tags-list');
   if (!list) return;
-  list.innerHTML = TAGS.map(t => `
+  const filtered = TAGS.filter(t => t.name.toLowerCase().includes(_tagFilter));
+  list.innerHTML = filtered.map(t => `
     <div class="manage-row" id="trow-${t.name}">
-      <span class="manage-tag-name">${t.name}</span>
-      <input class="manage-input" id="trename-${t.name}" value="${t.name.replace(/"/g,'&quot;')}"
-             style="display:none" placeholder="${i('renametag')}…"/>
-      <span class="merge-warning" id="tmwarn-${t.name}" style="display:none;color:#e67e22;font-size:11px">${i('mergewarning')}</span>
-      <button class="button-base" id="tren-btn-${t.name}" onclick="startRenameTag('${t.name}')">${i('renametag')}</button>
-      <button class="button-base" id="tren-save-${t.name}" style="display:none" onclick="saveRenameTag('${t.name}')">${i('save')}</button>
-      <button class="action-button delete-button" onclick="queueDeleteTag('${t.name}')">🗑️</button>
+      <span class="manage-tag-view" id="tview-${t.name}">
+        <span class="manage-tag-name">${t.name}</span>
+        <span class="manage-spacer"></span>
+        <button class="icon-button" onclick="startRenameTag('${t.name}')" title="Edit">✏️</button>
+        <button class="icon-button manage-delete-btn" onclick="queueDeleteTag('${t.name}')" title="Delete">🗑️</button>
+      </span>
+      <span class="manage-tag-edit" id="tedit-${t.name}" style="display:none">
+        <input class="manage-input" id="trename-${t.name}" value="${t.name.replace(/"/g,'&quot;')}"/>
+        <span class="merge-warning" id="tmwarn-${t.name}" style="display:none">${i('mergewarning')}</span>
+        <button class="icon-button" onclick="saveRenameTag('${t.name}')" title="Confirm">✔️</button>
+        <button class="icon-button" onclick="cancelRenameTag('${t.name}')" title="Cancel">✕</button>
+      </span>
     </div>`
   ).join('');
 }
 
 function startRenameTag(name) {
+  document.getElementById(`tview-${name}`).style.display = 'none';
+  const edit = document.getElementById(`tedit-${name}`);
+  edit.style.display = '';
   const input = document.getElementById(`trename-${name}`);
-  const btn   = document.getElementById(`tren-btn-${name}`);
-  const save  = document.getElementById(`tren-save-${name}`);
-  if (!input) return;
-  document.getElementById(`trow-${name}`)?.querySelector('.manage-tag-name')?.style.setProperty('display','none');
-  input.style.display = '';
-  btn.style.display   = 'none';
-  save.style.display  = '';
-  input.focus();
-  input.addEventListener('input', () => {
+  input?.focus();
+  input?.addEventListener('input', () => {
     const newName = input.value.trim();
     const exists  = TAGS.some(t => t.name.toLowerCase() === newName.toLowerCase() && t.name !== name);
     const warn    = document.getElementById(`tmwarn-${name}`);
@@ -469,31 +554,26 @@ function startRenameTag(name) {
   });
 }
 
+function cancelRenameTag(name) {
+  document.getElementById(`tview-${name}`).style.display = '';
+  document.getElementById(`tedit-${name}`).style.display = 'none';
+}
+
 async function saveRenameTag(oldName) {
   const input   = document.getElementById(`trename-${oldName}`);
   const newName = input?.value.trim();
-  if (!newName || newName === oldName) { renderTagsList(); return; }
+  if (!newName || newName === oldName) { cancelRenameTag(oldName); return; }
   const isMerge = TAGS.some(t => t.name.toLowerCase() === newName.toLowerCase() && t.name !== oldName);
-  const type = isMerge ? 'tag_merge' : 'tag_rename'; // Both use same performAction logic
-  const desc = isMerge
-    ? i('tagmergewarn', oldName, newName)
-    : i('tagrenamewarn', oldName, newName);
+  const desc    = isMerge ? i('tagmergewarn', oldName, newName) : i('tagrenamewarn', oldName, newName);
+  showLoading();
   await addPendingAction('tag_rename', { oldName, newName }, desc);
+  hideLoading();
   renderTagsList();
 }
 
 async function queueDeleteTag(tagName) {
+  showLoading();
   await addPendingAction('tag_delete', { tagName }, i('tagdelwarn', tagName));
-  renderTagsList();
-}
-
-async function addTag() {
-  const input = document.getElementById('new-tag-name');
-  const name  = input?.value.trim();
-  if (!name) return;
-  const { error } = await sb.from('tags').insert({ name });
-  if (error) { console.error('Add tag failed:', error.message); return; }
-  input.value = '';
-  await loadData();
+  hideLoading();
   renderTagsList();
 }

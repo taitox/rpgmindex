@@ -4,14 +4,19 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>RPGMINDEX — RPG Maker Games Index</title>
-  <link rel="preconnect" href="https://fonts.bunny.net">
-  <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-  <link href="https://fonts.bunny.net/css2?family=Inter:400,500,600,700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="css/tokens.css"/>
   <link rel="stylesheet" href="css/style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<!-- GLOBAL SPINNER — shown during any save/async operation -->
+<div id="global-spinner" class="hidden">
+  <div class="global-spinner-inner"></div>
+</div>
 
 <div class="loading-overlay hidden" id="loading-overlay">
   <div class="loading-spinner"></div>
@@ -31,10 +36,7 @@
       <option value="en">🇺🇸 EN-US</option>
       <option value="pt" selected>🇧🇷 PT-BR</option>
     </select>
-    <div class="toggle-pill">
-      <button onclick="setTheme('light')" id="theme-light-button" class="on">☀️</button>
-      <button onclick="setTheme('dark')"  id="theme-dark-button">🌙</button>
-    </div>
+    <button class="icon-button" id="theme-toggle-button" onclick="toggleTheme()" title="Toggle theme">☀️</button>
     <button class="button-base" onclick="openModal('contact-modal')"><span data-i18n="contact"></span></button>
     <button class="icon-button" id="admin-button" onclick="adminClick()" title="Admin">⚙️</button>
   </div>
@@ -52,7 +54,7 @@
 
 <main id="main-view">
 
-  <!-- WARNING DIV — tracker for big destructive actions -->
+  <!-- WARNING DIV -->
   <div id="warning-div" style="display:none">
     <div class="warning-header">
       <span class="warning-title">⚠️ <span data-i18n="pendingactions"></span></span>
@@ -61,6 +63,7 @@
     <div id="warning-actions-list"></div>
   </div>
 
+  <!-- CONTROL BAR -->
   <div class="control-bar">
     <div class="control-left">
       <div class="search-wrapper">
@@ -86,52 +89,75 @@
       </div>
       <div class="view-toggle">
         <button class="on" data-i18n="compact" id="view-compact" onclick="setView('compact')"></button>
-        <button data-i18n="cards"   id="view-cards"   onclick="setView('cards')"></button>
+        <button data-i18n="cards" id="view-cards" onclick="setView('cards')"></button>
       </div>
     </div>
   </div>
 
-  <!-- ADVANCED SEARCH -->
+  <!-- ADVANCED SEARCH PANEL -->
+  <!-- Each ecb-* wrapper is shown/hidden based on column visibility -->
   <div class="advanced-panel" id="advanced-panel">
     <div class="advanced-panel-header">
       <span class="advanced-panel-title" data-i18n="advsearch"></span>
       <button class="advanced-panel-close" onclick="tryCloseAdvanced()">✕</button>
     </div>
     <div class="advanced-panel-body">
-      <div class="adv-control">
-        <div class="ms-wrapper">
-          <button class="ms-trigger" onclick="toggleDropdown('ms-version-dropdown')">
-            <span id="ms-version-label"></span><span class="ms-arrow">▾</span>
-          </button>
-          <div class="ms-dropdown" id="ms-version-dropdown"></div>
+
+      <div class="adv-control" id="ecb-version">
+        <div class="ecb-wrapper">
+          <input type="text" class="ecb-input" id="ecb-version-input"
+                 placeholder="Filter versions…"
+                 oninput="filterAdvancedEcb('version',this.value)"
+                 onfocus="openAdvancedEcb('version')"
+                 autocomplete="off"/>
+          <div class="ecb-dropdown" id="ecb-version-dropdown"></div>
         </div>
       </div>
-      <div class="adv-control">
-        <div class="ms-wrapper">
-          <button class="ms-trigger" onclick="toggleDropdown('ms-country-dropdown')">
-            <span id="ms-country-label"></span><span class="ms-arrow">▾</span>
-          </button>
-          <div class="ms-dropdown" id="ms-country-dropdown"></div>
+
+      <div class="adv-control" id="ecb-country">
+        <div class="ecb-wrapper">
+          <input type="text" class="ecb-input" id="ecb-country-input"
+                 placeholder="Filter countries…"
+                 oninput="filterAdvancedEcb('country',this.value)"
+                 onfocus="openAdvancedEcb('country')"
+                 autocomplete="off"/>
+          <div class="ecb-dropdown" id="ecb-country-dropdown"></div>
         </div>
       </div>
+
       <div class="adv-control adv-control-tags">
         <div class="adv-tags-row">
-          <div class="ms-wrapper">
-            <button class="ms-trigger" onclick="toggleDropdown('ms-tags-dropdown')">
-              <span id="ms-tags-label"></span><span class="ms-arrow">▾</span>
-            </button>
-            <div class="ms-dropdown" id="ms-tags-dropdown"></div>
+          <div class="ecb-wrapper" id="ecb-tags">
+            <input type="text" class="ecb-input" id="ecb-tags-input"
+                   placeholder="Filter tags…"
+                   oninput="filterAdvancedEcb('tags',this.value)"
+                   onfocus="openAdvancedEcb('tags')"
+                   autocomplete="off"/>
+            <div class="ecb-dropdown" id="ecb-tags-dropdown"></div>
           </div>
           <div class="mode-toggle">
             <button id="adv-mode-or"  onclick="setTagMode('or')">OR</button>
             <button id="adv-mode-and" class="on" onclick="setTagMode('and')">AND</button>
           </div>
-          <span class="tags-only-label" data-i18n="tagsonly"></span>
+          <span class="label-pill label-pill-tagsonly" data-i18n="tagsonly"></span>
         </div>
       </div>
+
+      <div class="adv-control" id="ecb-fanLang">
+        <div class="ecb-wrapper">
+          <input type="text" class="ecb-input" id="ecb-fanLang-input"
+                 placeholder="Filter languages…"
+                 oninput="filterAdvancedEcb('fanLang',this.value)"
+                 onfocus="openAdvancedEcb('fanLang')"
+                 autocomplete="off"/>
+          <div class="ecb-dropdown" id="ecb-fanLang-dropdown"></div>
+        </div>
+      </div>
+
       <div class="adv-control adv-control-clear">
         <button class="clear-button" data-i18n="clearall" onclick="clearAdvancedFilters()"></button>
       </div>
+
     </div>
     <div class="advanced-chips-row" id="advanced-chips-row" style="display:none"></div>
   </div>
@@ -213,10 +239,10 @@
     <div class="modal-title"    data-i18n="adminlogin"></div>
     <div class="modal-subtitle" data-i18n="adminsub"></div>
     <div class="field">
-      <input id="login-email" type="email" placeholder="admin@example.com" title="Email"/>
+      <input id="login-email"    type="email"    placeholder="admin@example.com" title="Email"/>
     </div>
     <div class="field">
-      <input id="login-password" type="password" placeholder="Password" title="Password"/>
+      <input id="login-password" type="password" placeholder="Password"          title="Password"/>
     </div>
     <div class="modal-actions">
       <button class="button-secondary" data-i18n="cancel" onclick="closeModal('login-modal')"></button>
@@ -234,12 +260,12 @@
 
     <div class="field-row">
       <div class="field">
-        <input id="edit-game-title" type="text" placeholder="Nome do jogo" data-i18n-ph="edtitle" title="Título"/>
+        <input id="edit-game-title" type="text" placeholder="Título" title="Título"/>
         <div class="login-error" id="edit-title-error" style="display:none"></div>
       </div>
       <div class="field">
-        <input id="edit-game-developer" type="text" list="developer-list" autocomplete="off"
-               placeholder="Dev ou estúdio" title="Desenvolvedor"/>
+        <input id="edit-game-developer" type="text" list="developer-list"
+               placeholder="Desenvolvedor" title="Desenvolvedor" autocomplete="off"/>
         <datalist id="developer-list"></datalist>
       </div>
     </div>
@@ -250,7 +276,7 @@
       </div>
       <div class="field">
         <input id="edit-game-year" type="number" min="1900" max="2099"
-               placeholder="AAAA" title="Ano"
+               placeholder="Ano" title="Ano"
                oninput="if(this.value.length>4)this.value=this.value.slice(0,4)"/>
         <div class="login-error" id="edit-year-error" style="display:none"></div>
       </div>
@@ -262,11 +288,12 @@
       <datalist id="country-datalist"></datalist>
     </div>
 
-    <!-- Screenshot — single URL field + upload/delete button -->
+    <hr class="field-divider"/>
+
     <div class="field">
       <div class="screenshot-field">
         <input id="edit-screenshot-url" type="url" placeholder="Screenshot URL…" title="Screenshot URL"/>
-        <button type="button" id="screenshot-upload-btn" onclick="triggerScreenshotUpload()"></button>
+        <button type="button" class="button-base" id="screenshot-upload-btn" onclick="triggerScreenshotUpload()"></button>
         <input type="file" id="edit-screenshot-file-input" accept="image/*" style="display:none"
                onchange="handleScreenshotFile(this)"/>
       </div>
@@ -275,26 +302,55 @@
     <div class="field">
       <div class="download-options">
         <div class="download-option">
-          <input type="radio" name="download-type" id="download-available" value="available" onchange="toggleDownloadField()" checked/>
+          <input type="radio" name="download-type" id="download-available" value="available"
+                 onchange="toggleDownloadField()" checked/>
           <label for="download-available" data-i18n="avail"></label>
         </div>
         <div class="download-option">
-          <input type="radio" name="download-type" id="download-unavailable" value="na" onchange="toggleDownloadField()"/>
+          <input type="radio" name="download-type" id="download-unavailable" value="na"
+                 onchange="toggleDownloadField()"/>
           <label for="download-unavailable" data-i18n="na2"></label>
         </div>
       </div>
-      <input id="edit-download-url" type="url" placeholder="https://…" style="margin-top:6px" title="URL de Download"/>
+      <div id="download-available-fields">
+        <input id="edit-download-url" type="url"
+               data-i18n-ph="sourceph" style="margin-top:6px" title="Source URL"/>
+        <div class="login-error" id="edit-source-error" style="display:none"></div>
+        <input id="edit-archive-url" type="url"
+               data-i18n-ph="archiveph" style="margin-top:6px" title="Archive URL"/>
+        <div class="login-error" id="edit-archive-error" style="display:none"></div>
+      </div>
     </div>
+
+    <hr class="field-divider"/>
+
+    <div class="field-row">
+      <div class="field">
+        <input id="edit-fan-lang" type="text" list="fanlang-datalist"
+               data-i18n-ph="fanLangph" autocomplete="off" title="Fan-translation language"/>
+        <datalist id="fanlang-datalist">
+          <!-- populated by syncI18n / openEdit -->
+        </datalist>
+      </div>
+      <div class="field">
+        <input id="edit-fan-dev" type="text" data-i18n-ph="fanDevph" title="Fan-translation developer"/>
+        <div class="login-error" id="edit-fandev-error" style="display:none"></div>
+      </div>
+    </div>
+
+    <hr class="field-divider"/>
 
     <div class="field">
       <div class="edit-tag-ms" id="edit-tag-ms">
         <div class="edit-tag-input-row">
           <input type="text" id="edit-tag-input" data-i18n-ph="tagph"
-                 oninput="onEditTagInput(this.value)" onkeydown="onEditTagKeydown(event)"
-                 onfocus="renderEditTagDropdown(editForm.tagFilter)" autocomplete="off" title="Tags"/>
+                 oninput="onEditTagInput(this.value)"
+                 onkeydown="onEditTagKeydown(event)"
+                 onfocus="renderEditTagDropdown(editForm.tagFilter)"
+                 autocomplete="off" title="Tags"/>
           <span class="ms-arrow" onclick="toggleEditTagDropdown()" style="cursor:pointer;padding:0 4px">▾</span>
         </div>
-        <div class="ms-dropdown" id="edit-tag-dropdown"></div>
+        <div class="ecb-dropdown" id="edit-tag-dropdown"></div>
         <div class="edit-tag-chips" id="edit-tag-chips"></div>
       </div>
       <div class="login-error" data-i18n="tagsrequired" id="edit-tag-error" style="display:none"></div>
@@ -312,10 +368,10 @@
   <div class="modal-content large">
     <div class="modal-title" data-i18n="managever"></div>
     <div class="manage-add-row">
-      <input id="new-ver-name"  class="manage-input" placeholder="RPG Maker MZ"/>
-      <input id="new-ver-abbr"  class="manage-input" placeholder="RMMZ" style="width:90px"/>
-      <button class="button-primary" data-i18n="addversion" onclick="addVersion()"></button>
+      <input id="new-ver-name" class="manage-input" placeholder="RPG Maker MZ" style="flex:1"/>
+      <button class="button-primary" onclick="addVersion()" data-i18n="addversion"></button>
     </div>
+    <hr class="field-divider"/>
     <div id="versions-list" class="manage-list"></div>
     <div class="modal-actions">
       <button class="button-secondary" data-i18n="cancel" onclick="closeModal('manage-versions-modal')"></button>
@@ -327,10 +383,9 @@
 <div class="modal-overlay" id="manage-tags-modal">
   <div class="modal-content large">
     <div class="modal-title" data-i18n="managetags"></div>
-    <div class="manage-add-row">
-      <input id="new-tag-name" class="manage-input" placeholder="Nova tag…"/>
-      <button class="button-primary" data-i18n="addtag" onclick="addTag()"></button>
-    </div>
+    <input class="manage-input" style="width:100%;margin-bottom:8px"
+           data-i18n-ph="filtertagsmanager" oninput="filterTagsList(this.value)"/>
+    <hr class="field-divider"/>
     <div id="tags-list" class="manage-list"></div>
     <div class="modal-actions">
       <button class="button-secondary" data-i18n="cancel" onclick="closeModal('manage-tags-modal')"></button>

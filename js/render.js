@@ -1,10 +1,69 @@
 'use strict';
 
-// ── Core ──────────────────────────────────────────────────
-
 function setText(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
 
+// ── ECB (External Combo Box) config for Advanced Search ───
+// Each entry maps a filter name to its data source, selected array, and toggle function.
+// Adding a new filter: add an entry here and a matching ecb-* wrapper in index.html.
+const ECB_CONFIG = {
+  version: {
+    options:   () => getVersionsInUse().map(v => ({ value: v.id,   label: v.name })),
+    selected:  () => S.filters.versions,
+    toggleFn:  'toggleVersion',
+    phKey:     'filterversions',
+  },
+  country: {
+    options:   () => getCountriesInUse().map(c => ({ value: c, label: countryWithFlag(c) })),
+    selected:  () => S.filters.countries,
+    toggleFn:  'toggleCountry',
+    phKey:     'filtercountries',
+  },
+  tags: {
+    options:   () => TAGS.map(t => ({ value: t.name, label: t.name })),
+    selected:  () => S.filters.tags,
+    toggleFn:  'toggleTag',
+    phKey:     'filtertags',
+  },
+  fanLang: {
+    options:   () => FAN_LANGUAGES.map(l => ({ value: l, label: l })),
+    selected:  () => S.filters.fanLangs,
+    toggleFn:  'toggleFanLang',
+    phKey:     'filterfanlangs',
+  },
+};
+
+// Renders the dropdown for one ECB, filtered by the current input query.
+function renderEcbDropdown(name, query = '') {
+  const dd  = document.getElementById(`ecb-${name}-dropdown`);
+  const cfg = ECB_CONFIG[name];
+  if (!dd || !cfg) return;
+
+  const q        = query.toLowerCase().trim();
+  const selected = cfg.selected();
+  const options  = cfg.options().filter(o =>
+    !selected.includes(o.value) &&
+    (q === '' || o.label.toLowerCase().includes(q))
+  );
+
+  dd.innerHTML = options.map(o =>
+    `<div class="ecb-option" onclick="${cfg.toggleFn}('${o.value.replace(/'/g, "\\'")}')">${o.label}</div>`
+  ).join('') || `<div class="ecb-empty">—</div>`;
+
+  dd.classList.toggle('open', S.openDropdown === `ecb-${name}-dropdown`);
+}
+
+// Re-renders all ECB dropdowns using each input's current value.
+function renderAllEcbDropdowns() {
+  Object.keys(ECB_CONFIG).forEach(name => {
+    const q = document.getElementById(`ecb-${name}-input`)?.value || '';
+    renderEcbDropdown(name, q);
+  });
+}
+
+// ── Core ──────────────────────────────────────────────────
+
 function renderAll() {
+  if (window.innerWidth < 800 && S.view !== 'cards') S.view = 'cards';
   document.body.classList.toggle('view-cards', S.view === 'cards');
   syncI18n();
   renderWarningDiv();
@@ -40,13 +99,20 @@ function syncI18n() {
 
   document.getElementById('columns-button').textContent = `${i('cols')} ▾`;
   document.getElementById('edit-game-version').innerHTML =
-    VERSIONS.map(v => `<option value="${v.id}">${v.name || v.label}</option>`).join('');
+    VERSIONS.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+
+  // Update ECB placeholders when language changes
+  Object.entries(ECB_CONFIG).forEach(([name, cfg]) => {
+    const input = document.getElementById(`ecb-${name}-input`);
+    if (input) input.placeholder = i(cfg.phKey);
+  });
 
   const langSel = document.getElementById('lang-select');
   if (langSel) langSel.value = S.lang;
 
-  document.getElementById('theme-light-button').classList.toggle('on', S.theme === 'light');
-  document.getElementById('theme-dark-button').classList.toggle('on',  S.theme === 'dark');
+  const themeBtn = document.getElementById('theme-toggle-button');
+  if (themeBtn) themeBtn.textContent = S.theme === 'light' ? '☀️' : '🌙';
+
   document.getElementById('view-compact').classList.toggle('on', S.view === 'compact');
   document.getElementById('view-cards').classList.toggle('on',   S.view === 'cards');
   document.getElementById('admin-button').classList.toggle('admin-active', S.isAdmin);
@@ -62,25 +128,24 @@ function renderWarningDiv() {
   div.style.display = '';
   const list = document.getElementById('warning-actions-list');
   if (!list) return;
+  list.style.display = S.warningExpanded ? '' : 'none';
 
-  if (!S.warningExpanded) { list.style.display = 'none'; return; }
-  list.style.display = '';
-
-  list.innerHTML = PENDING_ACTIONS.map(a => {
-    const msLeft = Math.max(0, new Date(a.execute_at) - Date.now());
-    const mins   = Math.floor(msLeft / 60000);
-    const secs   = Math.floor((msLeft % 60000) / 1000);
-    const countdown = msLeft > 0 ? `${mins}:${String(secs).padStart(2,'0')}` : i('executing') || '…';
-    return `<div class="warning-action" id="wa-${a.id}">
-      <span class="warning-desc">${a.description}</span>
-      <span class="warning-countdown" id="wc-${a.id}">${countdown}</span>
-      <button class="warn-btn warn-ok"   onclick="executePendingAction('${a.id}')">[ok]</button>
-      <button class="warn-btn warn-undo" onclick="undoPendingAction('${a.id}')">[undo]</button>
-    </div>`;
-  }).join('');
+  if (S.warningExpanded) {
+    list.innerHTML = PENDING_ACTIONS.map(a => {
+      const msLeft    = Math.max(0, new Date(a.execute_at) - Date.now());
+      const mins      = Math.floor(msLeft / 60000);
+      const secs      = Math.floor((msLeft % 60000) / 1000);
+      const countdown = msLeft > 0 ? `${mins}:${String(secs).padStart(2,'0')}` : i('executing');
+      return `<div class="warning-action" id="wa-${a.id}">
+        <span class="warning-desc">${a.description}</span>
+        <span class="warning-countdown" id="wc-${a.id}">${countdown}</span>
+        <button class="warn-btn warn-ok"   onclick="executePendingAction('${a.id}')">[ok]</button>
+        <button class="warn-btn warn-undo" onclick="undoPendingAction('${a.id}')">[undo]</button>
+      </div>`;
+    }).join('');
+  }
 }
 
-// Called every second to update countdowns without full re-render.
 function tickWarningCountdowns() {
   PENDING_ACTIONS.forEach(a => {
     const el = document.getElementById(`wc-${a.id}`);
@@ -88,11 +153,15 @@ function tickWarningCountdowns() {
     const msLeft = Math.max(0, new Date(a.execute_at) - Date.now());
     const mins   = Math.floor(msLeft / 60000);
     const secs   = Math.floor((msLeft % 60000) / 1000);
-    el.textContent = msLeft > 0 ? `${mins}:${String(secs).padStart(2,'0')}` : '…';
+    el.textContent = msLeft > 0 ? `${mins}:${String(secs).padStart(2,'0')}` : i('executing');
   });
 }
 
 // ── Advanced Search Panel ─────────────────────────────────
+
+// Maps column keys to ECB names for the coupling rule.
+// Cards view always shows all ECBs regardless of column visibility.
+const COLUMN_TO_ECB = { version: 'version', country: 'country', fanLang: 'fanLang' };
 
 function renderAdvancedSearch() {
   const panel = document.getElementById('advanced-panel');
@@ -107,77 +176,42 @@ function renderAdvancedSearch() {
 
   if (!S.advancedOpen) return;
 
+  // Show/hide ECB wrappers based on column visibility (Cards always shows all)
+  const inCards = S.view === 'cards';
+  Object.entries(COLUMN_TO_ECB).forEach(([colKey, ecbName]) => {
+    const wrapper = document.getElementById(`ecb-${ecbName}`);
+    if (wrapper) wrapper.style.display = (inCards || S.cols[colKey]) ? '' : 'none';
+  });
+  // Tags ECB is always visible
+
   document.getElementById('adv-mode-or')?.classList.toggle('on',  S.filters.tagMode === 'or');
   document.getElementById('adv-mode-and')?.classList.toggle('on', S.filters.tagMode === 'and');
 
-  renderAdvancedDropdowns();
+  renderAllEcbDropdowns();
   renderAdvancedChips();
 }
 
-function renderFilterDropdown({ ddId, lblId, options, selected, toggleFn, emptyKey, summaryFn }) {
-  const dd = document.getElementById(ddId);
-  const lb = document.getElementById(lblId);
-  if (!dd) return;
-  dd.innerHTML = options.map(({ value, label }) => {
-    const sel = selected.includes(value);
-    return `<div class="ms-option ${sel ? 'selected' : ''}" onclick="${toggleFn}('${value}')">
-      <span class="ms-check">${sel ? '✓' : ''}</span>${label}
-    </div>`;
-  }).join('') || `<div class="ms-empty">${i(emptyKey)}</div>`;
-  dd.classList.toggle('open', S.openDropdown === ddId);
-  if (lb) lb.textContent = summaryFn();
-}
-
-function renderTagsDropdown() {
-  const dd = document.getElementById('ms-tags-dropdown');
-  const lb = document.getElementById('ms-tags-label');
-  if (!dd) return;
-  dd.innerHTML = TAGS.map(t => {
-    const sel = S.filters.tags.includes(t.name);
-    return `<div class="ms-option ${sel ? 'selected' : ''}" onclick="toggleTag('${t.name}')">
-      <span class="ms-check">${sel ? '✓' : ''}</span>${t.name}
-    </div>`;
-  }).join('') || `<div class="ms-empty">${i('alltags')}</div>`;
-  dd.classList.toggle('open', S.openDropdown === 'ms-tags-dropdown');
-  if (lb) lb.textContent = i('filtertags');
-}
-
-function renderAdvancedDropdowns() {
-  renderFilterDropdown({
-    ddId: 'ms-version-dropdown', lblId: 'ms-version-label',
-    options:   getVersionsInUse().map(v => ({ value: v.id, label: v.label })),
-    selected:  S.filters.versions,
-    toggleFn:  'toggleVersion',
-    emptyKey:  'allver',
-    summaryFn: () => i('filterversions'),
-  });
-  renderFilterDropdown({
-    ddId: 'ms-country-dropdown', lblId: 'ms-country-label',
-    options:   getCountriesInUse().map(c => ({ value: c, label: countryWithFlag(c) })),
-    selected:  S.filters.countries,
-    toggleFn:  'toggleCountry',
-    emptyKey:  'allcountries',
-    summaryFn: () => S.filters.countries.length
-      ? S.filters.countries.map(countryWithFlag).join(', ')
-      : i('allcountries'),
-  });
-  renderTagsDropdown();
-}
-
-// Chips order: [COUNTRY] [YEAR] [VERSION] [TAGS]
+// Chips order: [COUNTRY] [YEAR] [VERSION] [TAGS] [FAN-LANG]
+// Chips for hidden columns are suppressed in table view.
 function renderAdvancedChips() {
   const row = document.getElementById('advanced-chips-row');
   if (!row) return;
+  const inCards = S.view === 'cards';
+  const show    = key => inCards || S.cols[key];
+
   const chips = [
-    ...S.filters.countries.map(c =>
-      makeChip(countryWithFlag(c), `toggleCountry('${c}')`, 'chip-country')),
-    ...S.filters.years.map(y =>
-      makeChip(String(y), `toggleYear(${y})`, 'chip-year')),
-    ...S.filters.versions.map(vId =>
-      makeChip(VERSIONS.find(v => v.id === vId)?.label || vId, `toggleVersion('${vId}')`, 'chip-version')),
+    ...(show('country') ? S.filters.countries.map(c =>
+      makeChip(countryWithFlag(c), `toggleCountry('${c}')`, 'chip-country')) : []),
+    ...(show('year')    ? S.filters.years.map(y =>
+      makeChip(String(y), `toggleYear(${y})`, 'chip-year')) : []),
+    ...(show('version') ? S.filters.versions.map(vId =>
+      makeChip(VERSIONS.find(v=>v.id===vId)?.name||vId, `toggleVersion('${vId}')`, 'chip-version')) : []),
     ...S.filters.tags.map(t =>
       makeChip(t, `toggleTag('${t}')`, 'chip-tag')),
+    ...(show('fanLang') ? S.filters.fanLangs.map(l =>
+      makeChip(l, `toggleFanLang('${l}')`, 'chip-fanlang')) : []),
   ];
+
   row.innerHTML = chips.join('');
   row.style.display = chips.length ? 'flex' : 'none';
 }
@@ -187,11 +221,9 @@ function renderAdvancedChips() {
 function renderDevPanel() {
   const panel = document.getElementById('dev-panel');
   if (!panel) return;
-
   if (!S.activeDev) { panel.style.display = 'none'; return; }
   panel.style.display = '';
 
-  // Collect all games attributed to this developer (handles multi-dev strings)
   const devGames  = GAMES.filter(g => splitDev(g.developer).includes(S.activeDev));
   const countries = [...new Set(devGames.map(g => g.country).filter(Boolean))];
   const versions  = [...new Set(devGames.map(g => g.vId).filter(Boolean))];
@@ -200,7 +232,7 @@ function renderDevPanel() {
   panel.innerHTML = `
     <div class="dev-panel-header">
       <div class="dev-panel-name">${S.activeDev}</div>
-      <button class="advanced-panel-close" onclick="S.activeDev=null;renderAll()" aria-label="Fechar">✕</button>
+      <button class="advanced-panel-close" onclick="S.activeDev=null;renderAll()">✕</button>
     </div>
     <div class="dev-panel-country">${countries.map(countryWithFlag).join(' · ') || '—'}</div>
     <div class="dev-panel-badges badge-wrapper">
@@ -212,23 +244,34 @@ function renderDevPanel() {
 // ── Result count ──────────────────────────────────────────
 
 function updateResultCount(n) {
-  const el = document.getElementById('results-count');
+  const el          = document.getElementById('results-count');
   const isFiltering = S.filters.search || activeFilterCount() > 0;
-  el.textContent = isFiltering ? i('found')(n) : '';
+  el.textContent    = isFiltering ? i('found', n) : '';
   el.classList.toggle('vis', isFiltering);
 }
 
-// ── Columns menu (hidden in cards view) ───────────────────
+// ── Columns menu ──────────────────────────────────────────
 
 function renderColumnsMenu() {
   const wrapper = document.getElementById('columns-wrapper-el');
   if (wrapper) wrapper.style.display = S.view === 'cards' ? 'none' : '';
 
-  const labels = { developer: i('dev'), version: i('ver'), year: i('yr'), country: i('country'), tags: i('tags') };
-  document.getElementById('columns-menu').innerHTML =
-    Object.entries(labels)
-      .map(([k, label]) => `<label><input type="checkbox" ${S.cols[k] ? 'checked' : ''} onchange="toggleColumn('${k}')"/> ${label}</label>`)
-      .join('');
+  const fanDevGrayed = !S.cols.fanLang;
+  const labels = {
+    developer: i('dev'),    version: i('ver'),         year:    i('yr'),
+    country:   i('country'), tags:    i('tags'),
+    fanLang:   i('fanTranslation'), fanDev: i('fanDeveloper'),
+  };
+
+  document.getElementById('columns-menu').innerHTML = Object.entries(labels).map(([k, label]) => {
+    const checked  = S.cols[k];
+    const disabled = k === 'fanDev' && fanDevGrayed;
+    return `<label class="${disabled ? 'col-check-disabled' : ''}">
+      <input type="checkbox" ${checked ? 'checked' : ''}
+             ${disabled ? 'disabled' : `onchange="toggleColumn('${k}')"`}/>
+      ${label}
+    </label>`;
+  }).join('');
 }
 
 // ── Admin bar ─────────────────────────────────────────────
@@ -239,18 +282,21 @@ function updateAdminBar() {
   if (S.isAdmin && S.session) setText('admin-email-label', S.session.user.email);
 }
 
-// ── Table — new column order: TITLE|DEV|COUNTRY|YEAR|VER|TAGS|DL|ACTIONS ──
+// ── Table — TITLE|DEV|COUNTRY|YEAR|VERSION|TAGS|FAN-LANG|FAN-DEV|DL|ACTIONS ──
 
 function renderTableHeaders() {
+  const fanDevVisible = S.cols.fanDev && S.cols.fanLang;
   const cols = [
-    { id: 'title',     label: i('title'),   cls: 'col-title sortable'  },
-    S.cols.developer ? { id: 'developer', label: i('dev'),     cls: 'sortable'    } : null,
-    S.cols.country   ? { id: 'country',   label: i('country'), cls: 'sortable'    } : null,
-    S.cols.year      ? { id: 'year',      label: i('yr'),      cls: 'sortable'    } : null,
-    S.cols.version   ? { id: 'version',   label: i('ver'),     cls: ''            } : null,
-    S.cols.tags      ? { id: 'tags',      label: i('tags'),    cls: 'col-tags'    } : null,
-    { id: 'download',   label: i('dl'),    cls: 'col-download'  },
-    S.isAdmin        ? { id: 'actions',   label: i('actions'), cls: 'col-actions' } : null,
+    { id: 'title',     label: i('title'),          cls: 'col-title sortable'  },
+    S.cols.developer ? { id: 'developer', label: i('dev'),           cls: 'sortable'    } : null,
+    S.cols.country   ? { id: 'country',   label: i('country'),       cls: 'sortable'    } : null,
+    S.cols.year      ? { id: 'year',      label: i('yr'),            cls: 'sortable'    } : null,
+    S.cols.version   ? { id: 'version',   label: i('ver'),           cls: ''            } : null,
+    S.cols.tags      ? { id: 'tags',      label: i('tags'),          cls: 'col-tags'    } : null,
+    S.cols.fanLang   ? { id: 'fanLang',   label: i('fanTranslation'),cls: 'sortable'    } : null,
+    fanDevVisible    ? { id: 'fanDev',    label: i('fanDeveloper'),  cls: ''            } : null,
+    { id: 'download',   label: i('dl'),             cls: 'col-download'  },
+    S.isAdmin        ? { id: 'actions',   label: i('actions'),       cls: 'col-actions' } : null,
   ].filter(Boolean);
 
   document.getElementById('table-header-row').innerHTML = cols.map(c => {
@@ -265,7 +311,10 @@ function renderTableHeaders() {
 }
 
 function gameRow(g) {
-  const esc = s => (s || '').replace(/"/g, '&quot;');
+  const esc            = s => (s || '').replace(/"/g, '&quot;');
+  const fanDevVisible  = S.cols.fanDev && S.cols.fanLang;
+  const versionName    = VERSIONS.find(v => v.id === g.vId)?.name || '';
+
   return `<tr
     data-ss="${g.ss || ''}"
     data-title="${esc(g.title)}"
@@ -275,18 +324,20 @@ function gameRow(g) {
     <td class="col-title">${g.title}</td>
     ${S.cols.developer ? `<td class="col-developer">${devLinks(g.developer)}</td>` : ''}
     ${S.cols.country   ? `<td class="col-country col-search-link" data-search="${esc(g.country)}" onclick="event.stopPropagation();toggleCountry(this.dataset.search)">${countryWithFlag(g.country)}</td>` : ''}
-    ${S.cols.year      ? `<td class="col-year col-search-link" data-search="${g.year}" onclick="event.stopPropagation();toggleYear(parseInt(this.dataset.search))">${g.year}</td>` : ''}
-    ${S.cols.version   ? `<td><div class="badge-wrapper">${versionBadge(g.vId, true)}</div></td>` : ''}
+    ${S.cols.year      ? `<td class="col-year    col-search-link" data-search="${g.year}" onclick="event.stopPropagation();toggleYear(parseInt(this.dataset.search))">${g.year}</td>` : ''}
+    ${S.cols.version   ? `<td class="col-version">${versionName}</td>` : ''}
     ${S.cols.tags      ? `<td class="col-tags"><div class="badge-wrapper">${g.tags.map(tagBadge).join('')}</div></td>` : ''}
+    ${S.cols.fanLang   ? `<td class="col-fan-lang">${g.fanLang || '—'}</td>` : ''}
+    ${fanDevVisible    ? `<td class="col-fan-dev">${g.fanDev  || '—'}</td>` : ''}
     <td class="col-download"><div class="badge-wrapper">${downloadBadge(g)}</div></td>
-    ${S.isAdmin ? `<td><div class="action-buttons">${adminBtns(g.id, true)}</div></td>` : ''}
+    ${S.isAdmin        ? `<td><div class="action-buttons">${adminBtns(g.id, true)}</div></td>` : ''}
   </tr>`;
 }
 
 function renderTable(games) {
   document.getElementById('table-body').innerHTML = games.length
     ? games.map(gameRow).join('')
-    : `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div></td></tr>`;
+    : `<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div></td></tr>`;
 }
 
 // ── Cards ─────────────────────────────────────────────────
@@ -299,17 +350,31 @@ function gameCard(g, idx) {
   const tagHtml = visible.map(tagBadge).join('') +
     (extra > 0 ? `<span class="badge badge-tag" onclick="event.stopPropagation();openGameModal('${g.id}')">${extra}+ tags</span>` : '');
 
+  const translationRow = g.fanLang
+    ? `<div class="card-translation">
+        <span class="label-pill label-pill-translation">TRANSLATION</span>
+        <span>${g.fanLang}${g.fanDev ? ` · ${g.fanDev}` : ''}</span>
+      </div>`
+    : '';
+
   return `<div class="card" style="animation-delay:${Math.min(idx*25,200)}ms" onclick="openGameModal('${g.id}')">
     ${ss}
     <div class="card-screenshot-fallback" style="${g.ss?'display:none':'display:flex'}" data-i18n="noss"></div>
     <div class="card-body">
       <div class="card-title">${g.title}</div>
-      <div class="card-developer">${devLinks(g.developer)}<span class="card-dev-meta"> · ${g.year} · ${countryWithFlag(g.country)}</span></div>
-      <div class="card-tags badge-wrapper">${tagHtml}</div>
+      <div class="card-developer">
+        <div class="card-dev-name">${devLinks(g.developer)}</div>
+        <span class="card-dev-meta"> · ${g.year} · ${countryWithFlag(g.country)}</span>
+      </div>
+      <div class="card-badges badge-wrapper">
+        ${versionBadge(g.vId)}${g.tags.map(tagBadge).join('')}
+        ${extra > 0 ? `<span class="badge badge-tag" onclick="event.stopPropagation();openGameModal('${g.id}')">${extra}+ tags</span>` : ''}
+      </div>
+      ${translationRow}
     </div>
     <div class="card-footer">
-      <div class="badge-wrapper">${versionBadge(g.vId)}</div>
-      <div style="display:flex;align-items:center;gap:5px">${adminBtns(g.id,true)}${downloadBadge(g)}</div>
+      <div></div>
+      <div class="card-footer-right">${adminBtns(g.id,true)}${downloadBadge(g)}</div>
     </div>
   </div>`;
 }
@@ -342,11 +407,12 @@ function openGameModal(gameId) {
   _renderModalTags(g);
 
   document.getElementById('game-detail-footer').innerHTML =
-    `<div>${downloadBadge(g)}</div>
-     ${S.isAdmin ? `<div class="action-buttons">
-       <button class="action-button" onclick="closeModal('game-detail-modal');openEdit('${g.id}')">${i('editgame')} ✏️</button>
-       <button class="action-button delete-button" onclick="closeModal('game-detail-modal');delGame('${g.id}')">🗑️</button>
-     </div>` : ''}`;
+    `<div></div>
+     <div class="game-detail-footer-right">
+       ${S.isAdmin ? `<button class="action-button" onclick="closeModal('game-detail-modal');openEdit('${g.id}')">✏️</button>
+         <button class="action-button delete-button" onclick="closeModal('game-detail-modal');delGame('${g.id}')">🗑️</button>` : ''}
+       ${downloadBadge(g)}
+     </div>`;
 
   openModal('game-detail-modal');
 }
@@ -365,7 +431,7 @@ function _renderModalMeta(g) {
     </div>`;
 }
 
-// Version badge appears first in the tags row (same ordering as chips).
+// Version badge appears first, then tags.
 function _renderModalTags(g) {
   document.getElementById('game-detail-tags').innerHTML =
     `<div class="badge-wrapper">${versionBadge(g.vId)}${g.tags.map(tagBadge).join('')}</div>`;

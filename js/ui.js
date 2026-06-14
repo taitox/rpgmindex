@@ -8,6 +8,34 @@ function onSearch(value) {
   _searchTimer = setTimeout(() => { S.filters.search = value; renderAll(); }, 200);
 }
 
+// ── ECB interactions (Advanced Search combo boxes) ────────
+
+function openAdvancedEcb(name) {
+  S.openDropdown = `ecb-${name}-dropdown`;
+  const q = document.getElementById(`ecb-${name}-input`)?.value || '';
+  renderEcbDropdown(name, q);
+}
+
+function filterAdvancedEcb(name, query) {
+  S.openDropdown = `ecb-${name}-dropdown`;
+  renderEcbDropdown(name, query);
+}
+
+function toggleAdvancedEcb(name) {
+  const ddId = `ecb-${name}-dropdown`;
+  if (S.openDropdown === ddId) {
+    S.openDropdown = null;
+    document.getElementById(ddId)?.classList.remove('open');
+  } else {
+    openAdvancedEcb(name);
+  }
+}
+
+function _clearEcbInput(name) {
+  const input = document.getElementById(`ecb-${name}-input`);
+  if (input) input.value = '';
+}
+
 // ── Advanced Search Panel ────────────────────────────────
 
 function toggleAdvancedSearch() {
@@ -29,11 +57,11 @@ function resetAdvancedFilters() {
   S.filters.countries = [];
   S.filters.years     = [];
   S.filters.tags      = [];
+  S.filters.fanLangs  = [];
 }
 
 function clearAdvancedFilters() { resetAdvancedFilters(); renderAll(); }
-
-function keepAndClose()     { closeModal('confirm-clear-modal'); }
+function keepAndClose()         { closeModal('confirm-clear-modal'); }
 
 function confirmClearClose() {
   resetAdvancedFilters();
@@ -43,26 +71,22 @@ function confirmClearClose() {
   renderAll();
 }
 
-function toggleDropdown(ddId) {
-  S.openDropdown = S.openDropdown === ddId ? null : ddId;
-  renderAdvancedDropdowns();
-}
-
 // ── Filter toggles ───────────────────────────────────────
 
 function toggleVersion(vId) {
   toggleInArray(S.filters.versions, vId);
+  _clearEcbInput('version');
   S.advancedOpen = true;
   renderAll();
 }
 
 function toggleCountry(country) {
   toggleInArray(S.filters.countries, country);
+  _clearEcbInput('country');
   S.advancedOpen = true;
   renderAll();
 }
 
-// Year chips — selected by clicking a year cell in the table.
 function toggleYear(year) {
   toggleInArray(S.filters.years, year);
   S.advancedOpen = true;
@@ -71,6 +95,14 @@ function toggleYear(year) {
 
 function toggleTag(tag) {
   toggleInArray(S.filters.tags, tag);
+  _clearEcbInput('tags');
+  S.advancedOpen = true;
+  renderAll();
+}
+
+function toggleFanLang(lang) {
+  toggleInArray(S.filters.fanLangs, lang);
+  _clearEcbInput('fanLang');
   S.advancedOpen = true;
   renderAll();
 }
@@ -84,13 +116,32 @@ function clearFilters() {
   renderAll();
 }
 
+// ── Columns ───────────────────────────────────────────────
+
+function toggleColumn(key) {
+  S.cols[key] = !S.cols[key];
+
+  // Clear filters for columns being hidden (avoids invisible active filters)
+  if (!S.cols[key]) {
+    const clearMap = {
+      version: () => S.filters.versions  = [],
+      country: () => S.filters.countries = [],
+      year:    () => S.filters.years     = [],
+      fanLang: () => S.filters.fanLangs  = [],
+    };
+    clearMap[key]?.();
+  }
+
+  try { localStorage.setItem('rpgmkbr-cols', JSON.stringify(S.cols)); } catch (_) {}
+  renderAll();
+}
+
 // ── Developer Panel ───────────────────────────────────────
 
 function toggleDev(devName) {
   if (S.activeDev === devName) {
     S.activeDev = null;
   } else {
-    // Close game detail modal if open before showing dev panel
     if (S.activeModalGameId) {
       S.activeModalGameId = null;
       closeModal('game-detail-modal');
@@ -98,6 +149,18 @@ function toggleDev(devName) {
     S.activeDev = devName;
   }
   renderAll();
+}
+
+// ── View ─────────────────────────────────────────────────
+
+function setView(view) {
+  S.view = view;
+  try { localStorage.setItem('rpgmkbr-view', view); } catch (_) {}
+  renderAll();
+}
+
+function toggleColumnsMenu() {
+  document.getElementById('columns-menu').classList.toggle('open');
 }
 
 // ── Sort ─────────────────────────────────────────────────
@@ -120,25 +183,9 @@ function onCardSort(value) {
   if (entry) { S.sort.col = entry.col; S.sort.dir = entry.dir; renderAll(); }
 }
 
-// ── View / Columns ───────────────────────────────────────
-
-function setView(view) {
-  S.view = view;
-  try { localStorage.setItem('rpgmkbr-view', view); } catch (_) {}
-  renderAll();
-}
-
-function toggleColumn(key) {
-  S.cols[key] = !S.cols[key];
-  try { localStorage.setItem('rpgmkbr-cols', JSON.stringify(S.cols)); } catch (_) {}
-  renderAll();
-}
-
-function toggleColumnsMenu() {
-  document.getElementById('columns-menu').classList.toggle('open');
-}
-
 // ── Theme / Lang ─────────────────────────────────────────
+
+function toggleTheme() { setTheme(S.theme === 'light' ? 'dark' : 'light'); }
 
 function setTheme(theme) {
   S.theme = theme;
@@ -154,11 +201,6 @@ function setLang(lang) {
   renderAll();
 }
 
-// ── Modals ───────────────────────────────────────────────
-
-function openModal(id)  { document.getElementById(id).classList.add('open');    }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
 // ── Warning div ──────────────────────────────────────────
 
 function toggleWarningExpand() {
@@ -169,12 +211,22 @@ function toggleWarningExpand() {
   if (btn)  btn.textContent    = S.warningExpanded ? '▾' : '▸';
 }
 
+// ── Global loading spinner ────────────────────────────────
+
+function showLoading() { document.getElementById('global-spinner')?.classList.remove('hidden'); }
+function hideLoading() { document.getElementById('global-spinner')?.classList.add('hidden');    }
+
+// ── Modals ───────────────────────────────────────────────
+
+function openModal(id)  { document.getElementById(id)?.classList.add('open');    }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
 // ── Tooltip ──────────────────────────────────────────────
 
 function showTooltip(e, row) {
   if (window.innerWidth < 800) return;
-  const ss     = row.dataset.ss  || '';
-  const title  = row.dataset.title || '';
+  const ss    = row.dataset.ss    || '';
+  const title = row.dataset.title || '';
   const hasImg = ss !== '';
   document.getElementById('tooltip-image').style.display    = hasImg ? 'block' : 'none';
   document.getElementById('tooltip-fallback').style.display = hasImg ? 'none'  : 'block';
@@ -218,19 +270,22 @@ document.getElementById('login-password')
   .addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 document.addEventListener('click', e => {
+  // Close columns menu
   const colBtn  = document.getElementById('columns-button');
   const colMenu = document.getElementById('columns-menu');
   if (colBtn && colMenu && !colBtn.contains(e.target) && !colMenu.contains(e.target))
     colMenu.classList.remove('open');
 
+  // Close Advanced Search ECB dropdowns on outside click
   if (S.openDropdown !== null) {
     const panel = document.getElementById('advanced-panel');
     if (panel && !panel.contains(e.target)) {
       S.openDropdown = null;
-      renderAdvancedDropdowns();
+      renderAllEcbDropdowns();
     }
   }
 
+  // Close edit tag dropdown
   const editMs = document.getElementById('edit-tag-ms');
   const editDd = document.getElementById('edit-tag-dropdown');
   if (editMs && editDd && !editMs.contains(e.target)) editDd.classList.remove('open');
