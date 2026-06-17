@@ -4,7 +4,9 @@ let S = {
   lang:              'pt',
   theme:             'light',
   view:              'compact',
+  page:              'games',    // 'games' | 'about' | 'settings'
   isAdmin:           false,
+  profile:           null,       // { id, username, role } for the current logged-in user
   loading:           true,
   session:           null,
   advancedOpen:      false,
@@ -16,13 +18,14 @@ let S = {
   sort: { col: 'title', dir: 'asc' },
 
   filters: {
-    search:    '',
-    versions:  [],
-    countries: [],
-    years:     [],
-    tags:      [],
-    tagMode:   'and',
-    fanLangs:  [],
+    search:        '',
+    versions:      [],
+    countries:     [],
+    years:         [],
+    tags:          [],
+    blacklistTags: [],
+    tagMode:       'and',
+    fanLangs:      [],
   },
 
   cols: {

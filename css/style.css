@@ -1013,3 +1013,123 @@ td.col-version { color: var(--text-muted); font-size: 12.5px; }
 .manage-ver-label { font-size: 11px; }
 .manage-tag-view, .manage-tag-edit { display: flex; align-items: center; gap: 8px; width: 100%; }
 .col-check-disabled { opacity: .45; cursor: not-allowed; }
+
+/* ===== BLACKLIST ECB INPUT ===== */
+.ecb-input-blacklist {
+  border-color: #e07070;
+  background: #fff5f5;
+}
+.ecb-input-blacklist:focus { border-color: #c0392b; }
+[data-theme="dark"] .ecb-input-blacklist {
+  border-color: #803030;
+  background: #2a1010;
+}
+[data-theme="dark"] .ecb-input-blacklist:focus { border-color: #e05050; }
+
+/* ===== BLACKLIST CHIP ===== */
+.chip-blacklist {
+  background: #fdecea;
+  color: #7a1212;
+  border-color: #e07070;
+}
+[data-theme="dark"] .chip-blacklist {
+  background: #3a1010;
+  color: #ff9090;
+  border-color: #803030;
+}
+
+/* ===== CHIPS SECTION LABELS ===== */
+/* Shown above each chip group when blacklist is active */
+.chips-section-label {
+  display: block;
+  width: 100%;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-subtle);
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+.chips-section-label:first-child { margin-top: 0; }
+.chips-section-label-blacklist { color: #c0392b; }
+[data-theme="dark"] .chips-section-label-blacklist { color: #e05050; }
+
+/* ===== ADVANCED CHIPS ROW — flex-wrap to accommodate labels ===== */
+.advanced-chips-row { flex-wrap: wrap; align-content: flex-start; }
+
+/* ===== SPA PAGES ===== */
+.page-content-wrap {
+  max-width: 960px; margin: 40px auto; padding: 0 20px;
+}
+.page-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 36px 40px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ===== ABOUT PAGE ===== */
+.about-card { max-width: 100%; }
+.about-main {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 48px;
+  align-items: start;
+}
+.about-title { font-family: var(--font-display); font-size: 26px; margin-bottom: 14px; }
+.about-text p { font-size: 14px; line-height: 1.75; color: var(--text-secondary); }
+.about-contact-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+.about-contact p { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+@media (max-width: 799px) {
+  .about-main { grid-template-columns: 1fr; gap: 32px; }
+}
+
+/* ===== SETTINGS PAGE ===== */
+.settings-guest { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+.settings-intro { font-size: 13px; color: var(--text-muted); }
+.settings-profile { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.settings-username { font-family: var(--font-display); font-size: 22px; color: var(--text-primary); }
+.settings-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.settings-tools   { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.settings-note { font-size: 12px; color: var(--color-success, #2e7d32); margin-top: 10px; }
+
+/* ===== ROLE BADGES ===== */
+.badge-role { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; border: 1px solid; }
+.badge-role-archiver { background: #e8f0fe; color: #1a3a9c; border-color: #aac4f5; }
+.badge-role-mod      { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+[data-theme="dark"] .badge-role-archiver { background: #1a2a5c; color: #aac4f5; border-color: #3a5ab0; }
+[data-theme="dark"] .badge-role-mod      { background: #0d2e10; color: #a5d6a7; border-color: #2e6b32; }
+
+/* ===== GAME RESPONSIBLE (modal footer left) ===== */
+.game-detail-responsible {
+  font-size: 12px; color: var(--text-muted);
+  display: flex; align-items: center;
+}
+.game-detail-responsible strong { color: var(--text-primary); margin-left: 3px; }
+.game-detail-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+
+/* ===== TOPBAR NAVIGATION BUTTONS ===== */
+/* On desktop: show text buttons, hide icon buttons */
+.topbar-nav-icon { display: none; }
+.topbar-nav-btn  { display: inline-flex; }
+@media (max-width: 799px) {
+  .topbar-nav-icon { display: inline-flex; }
+  .topbar-nav-btn  { display: none; }
+}
+
+/* ===== ADMIN BAR ROLE PILL ===== */
+.admin-role-pill {
+  font-size: 10px; font-weight: 800; padding: 1px 7px;
+  border-radius: 999px; border: 1px solid rgba(255,255,255,.35);
+  color: rgba(255,255,255,.9); background: rgba(255,255,255,.15);
+  text-transform: uppercase; letter-spacing: .4px;
+}
+
+/* ===== USERS MANAGE ROWS ===== */
+.manage-user-view, .manage-user-edit {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+}

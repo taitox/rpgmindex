@@ -48,8 +48,6 @@ const COUNTRIES = [
   ['Yemen','🇾🇪'],['Zambia','🇿🇲'],['Zimbabwe','🇿🇼'],
 ];
 
-// Small, hardcoded set of fan-translation languages.
-// Add or remove entries here to update the dropdown in Add Game.
 const FAN_LANGUAGES = [
   'English','Portuguese','Spanish','French','German','Italian',
   'Russian','Japanese','Korean','Chinese (Simplified)','Chinese (Traditional)',
@@ -57,9 +55,10 @@ const FAN_LANGUAGES = [
   'Finnish','Czech','Hungarian','Romanian','Turkish','Greek','Ukrainian',
 ];
 
-let GAMES           = [];
-let VERSIONS        = [];
-let TAGS            = [];
+let GAMES    = [];
+let VERSIONS = [];
+let TAGS     = [];
+let PROFILES = [];   // all user profiles, loaded when admin is authenticated
 let PENDING_ACTIONS = [];
 
 let _versionsInUse  = [];
@@ -71,14 +70,37 @@ function getCountriesInUse() { return _countriesInUse; }
 function getDevList()        { return _devList;        }
 
 function countryFlag(name) {
-  const entry = COUNTRIES.find(([n]) => n === name);
-  return entry?.[1] || '';
+  const entry = COUNTRIES.find(function(pair) { return pair[0] === name; });
+  return entry ? entry[1] : '';
 }
 
 function countryWithFlag(name) {
   if (!name || name === 'Unknown') return name || 'Unknown';
   const flag = countryFlag(name);
-  return flag ? `${flag} ${name}` : name;
+  return flag ? flag + ' ' + name : name;
+}
+
+// Loads the current user's profile into S.profile.
+// Called after every successful login and on initial session restore.
+async function loadProfile() {
+  if (!S.session || !S.session.user) { S.profile = null; return; }
+  const result = await sb.from('profiles').select('*').eq('id', S.session.user.id).single();
+  if (result.error || !result.data) { S.profile = null; return; }
+  S.profile = {
+    id:       result.data.id,
+    username: result.data.username,
+    role:     result.data.role,
+  };
+}
+
+// Loads all profiles for the Users management modal (Archiver only).
+async function loadProfiles() {
+  if (!S.isAdmin) { PROFILES = []; return; }
+  const result = await sb.from('profiles').select('*').order('username', { ascending: true });
+  if (result.error) { console.error('Profiles:', result.error.message); PROFILES = []; return; }
+  PROFILES = (result.data || []).map(function(row) {
+    return { id: row.id, username: row.username, role: row.role };
+  });
 }
 
 async function loadData() {
@@ -93,57 +115,79 @@ async function loadData() {
     queries.push(sb.from('pending_actions').select('*').order('created_at', { ascending: true }));
   }
 
-  const [gRes, vRes, tRes, pRes] = await Promise.all(queries);
+  const results    = await Promise.all(queries);
+  const gRes = results[0];
+  const vRes = results[1];
+  const tRes = results[2];
+  const pRes = results[3];
 
   if (gRes.error) console.error('Games:',    gRes.error.message);
   if (vRes.error) console.error('Versions:', vRes.error.message);
   if (tRes.error) console.error('Tags:',     tRes.error.message);
 
-  GAMES = (gRes.data || []).map(row => ({
-    id:         row.id,
-    title:      row.title      || '',
-    developer:  row.developer  || '',
-    vId:        row.v_id,
-    year:       row.year,
-    country:    row.country    || 'Unknown',
-    tags:       row.tags       || [],
-    ss:         row.ss         || null,
-    url:        row.url        || null,
-    archiveUrl: row.archive_url || null,
-    fanLang:    row.fan_lang   || null,
-    fanDev:     row.fan_dev    || null,
-    created_at: row.created_at,
-  }));
+  GAMES = (gRes.data || []).map(function(row) {
+    return {
+      id:          row.id,
+      title:       row.title      || '',
+      developer:   row.developer  || '',
+      vId:         row.v_id,
+      year:        row.year,
+      country:     row.country    || 'Unknown',
+      tags:        row.tags       || [],
+      ss:          row.ss         || null,
+      url:         row.url        || null,
+      archiveUrl:  row.archive_url  || null,
+      isLostMedia: row.is_lost_media || false,
+      fanLang:     row.fan_lang   || null,
+      fanDev:      row.fan_dev    || null,
+      signedBy:    row.signed_by  || null,
+      created_at:  row.created_at,
+    };
+  });
 
-  VERSIONS = (vRes.data || []).map(row => ({
-    id:      row.id,
-    name:    row.name  || row.label,
-    label:   row.label,
-    iconUrl: row.icon_url || null,
-    bg: row.bg, tx: row.tx, bd: row.bd,
-  }));
+  VERSIONS = (vRes.data || []).map(function(row) {
+    return {
+      id:      row.id,
+      name:    row.name  || row.label,
+      label:   row.label,
+      iconUrl: row.icon_url || null,
+      bg: row.bg, tx: row.tx, bd: row.bd,
+    };
+  });
 
-  TAGS = (tRes.data || []).map(row => ({
-    name: row.name,
-    bg:   row.color_bg || null,
-    tx:   row.color_tx || null,
-    bd:   row.color_bd || null,
-  }));
+  TAGS = (tRes.data || []).map(function(row) {
+    return {
+      name: row.name,
+      bg:   row.color_bg || null,
+      tx:   row.color_tx || null,
+      bd:   row.color_bd || null,
+    };
+  });
 
-  PENDING_ACTIONS = ((pRes?.data) || []).map(row => ({
-    id:          row.id,
-    type:        row.type,
-    payload:     row.payload     || {},
-    description: row.description,
-    execute_at:  row.execute_at,
-    created_by:  row.created_by,
-    created_at:  row.created_at,
-  }));
+  PENDING_ACTIONS = (pRes && pRes.data ? pRes.data : []).map(function(row) {
+    return {
+      id:          row.id,
+      type:        row.type,
+      payload:     row.payload     || {},
+      description: row.description,
+      execute_at:  row.execute_at,
+      created_by:  row.created_by,
+      created_at:  row.created_at,
+    };
+  });
 
-  const usedVIds  = new Set(GAMES.map(g => g.vId).filter(Boolean));
-  _versionsInUse  = VERSIONS.filter(v => usedVIds.has(v.id));
-  _countriesInUse = [...new Set(GAMES.map(g => g.country).filter(Boolean))].sort();
-  _devList        = [...new Set(GAMES.map(g => g.developer).filter(Boolean))].sort();
+  // Protected tags must always exist.
+  await sb.from('tags').upsert(
+    [{ name: 'Lost Media' }, { name: 'Found Media' }],
+    { onConflict: 'name', ignoreDuplicates: true }
+  );
+
+  await loadProfiles();
+
+  const usedVIds  = new Set(GAMES.map(function(g) { return g.vId; }).filter(Boolean));
+  _versionsInUse  = VERSIONS.filter(function(v) { return usedVIds.has(v.id); });
+  _countriesInUse = Array.from(new Set(GAMES.map(function(g) { return g.country; }).filter(Boolean))).sort();
+  _devList        = Array.from(new Set(GAMES.map(function(g) { return g.developer; }).filter(Boolean))).sort();
 
   S.loading = false;
 }

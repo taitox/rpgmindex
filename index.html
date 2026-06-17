@@ -13,18 +13,20 @@
 </head>
 <body>
 
-<!-- GLOBAL SPINNER — shown during any save/async operation -->
+<!-- GLOBAL SPINNER -->
 <div id="global-spinner" class="hidden">
   <div class="global-spinner-inner"></div>
 </div>
 
+<!-- INITIAL LOADING OVERLAY -->
 <div class="loading-overlay hidden" id="loading-overlay">
   <div class="loading-spinner"></div>
   <div class="loading-message" data-i18n="loading"></div>
 </div>
 
+<!-- TOP BAR -->
 <header class="topbar">
-  <a class="logo" href="#" onclick="return false">
+  <a class="logo" href="#games" onclick="navigateTo('games');return false">
     <span class="logo-icon">♞</span>
     <div class="logo-text">
       <span class="logo-title">RPGMINDEX</span>
@@ -37,33 +39,38 @@
       <option value="pt" selected>🇧🇷 PT-BR</option>
     </select>
     <button class="icon-button" id="theme-toggle-button" onclick="toggleTheme()" title="Toggle theme">☀️</button>
-    <button class="button-base" onclick="openModal('contact-modal')"><span data-i18n="contact"></span></button>
-    <button class="icon-button" id="admin-button" onclick="adminClick()" title="Admin">⚙️</button>
+    <button class="button-base topbar-nav-btn" id="about-btn"    onclick="navigateTo('about')"    data-i18n="aboutus"></button>
+    <button class="icon-button topbar-nav-icon" id="about-icon-btn" onclick="navigateTo('about')"    title="About">ℹ️</button>
+    <button class="button-base topbar-nav-btn" id="settings-btn" onclick="navigateTo('settings')" data-i18n="settings"></button>
+    <button class="icon-button topbar-nav-icon" id="settings-icon-btn" onclick="navigateTo('settings')" title="Settings">⚙️</button>
   </div>
 </header>
 
+<!-- ADMIN BAR — shown on every page when admin is logged in -->
 <div id="admin-bar">
-  <span class="admin-bar-left">🔐 <span data-i18n="adminmode"></span> · <span id="admin-email-label"></span></span>
+  <span class="admin-bar-left">
+    🔐 <span data-i18n="adminmode"></span>
+    · <strong id="admin-username-label"></strong>
+    · <span id="admin-role-label" class="admin-role-pill"></span>
+  </span>
   <div class="admin-bar-right">
-    <button data-i18n="addgame"    onclick="openEdit(null)"></button>
-    <button data-i18n="managever"  onclick="openManageVersions()"></button>
-    <button data-i18n="managetags" onclick="openManageTags()"></button>
-    <button data-i18n="logout"     onclick="doLogout()"></button>
+    <button data-i18n="addgame" onclick="openEdit(null)"></button>
+    <button data-i18n="logout"  onclick="doLogout()"></button>
   </div>
 </div>
 
-<main id="main-view">
-
-  <!-- WARNING DIV -->
-  <div id="warning-div" style="display:none">
-    <div class="warning-header">
-      <span class="warning-title">⚠️ <span data-i18n="pendingactions"></span></span>
-      <button id="warning-toggle-btn" onclick="toggleWarningExpand()">▾</button>
-    </div>
-    <div id="warning-actions-list"></div>
+<!-- WARNING DIV — visible on any page when pending actions exist -->
+<div id="warning-div" style="display:none">
+  <div class="warning-header">
+    <span class="warning-title">⚠️ <span data-i18n="pendingactions"></span></span>
+    <button id="warning-toggle-btn" onclick="toggleWarningExpand()">▾</button>
   </div>
+  <div id="warning-actions-list"></div>
+</div>
 
-  <!-- CONTROL BAR -->
+<!-- ═══════════════════════════════ PAGE: GAMES ═══════════════════════════════ -->
+<main id="page-games">
+
   <div class="control-bar">
     <div class="control-left">
       <div class="search-wrapper">
@@ -89,50 +96,36 @@
       </div>
       <div class="view-toggle">
         <button class="on" data-i18n="compact" id="view-compact" onclick="setView('compact')"></button>
-        <button data-i18n="cards" id="view-cards" onclick="setView('cards')"></button>
+        <button data-i18n="cards"   id="view-cards"   onclick="setView('cards')"></button>
       </div>
     </div>
   </div>
 
-  <!-- ADVANCED SEARCH PANEL -->
-  <!-- Each ecb-* wrapper is shown/hidden based on column visibility -->
   <div class="advanced-panel" id="advanced-panel">
     <div class="advanced-panel-header">
       <span class="advanced-panel-title" data-i18n="advsearch"></span>
       <button class="advanced-panel-close" onclick="tryCloseAdvanced()">✕</button>
     </div>
     <div class="advanced-panel-body">
-
       <div class="adv-control" id="ecb-version">
         <div class="ecb-wrapper">
-          <input type="text" class="ecb-input" id="ecb-version-input"
-                 placeholder="Filter versions…"
-                 oninput="filterAdvancedEcb('version',this.value)"
-                 onfocus="openAdvancedEcb('version')"
-                 autocomplete="off"/>
+          <input type="text" class="ecb-input" id="ecb-version-input" placeholder="Filter versions…"
+                 oninput="filterAdvancedEcb('version',this.value)" onfocus="openAdvancedEcb('version')" autocomplete="off"/>
           <div class="ecb-dropdown" id="ecb-version-dropdown"></div>
         </div>
       </div>
-
       <div class="adv-control" id="ecb-country">
         <div class="ecb-wrapper">
-          <input type="text" class="ecb-input" id="ecb-country-input"
-                 placeholder="Filter countries…"
-                 oninput="filterAdvancedEcb('country',this.value)"
-                 onfocus="openAdvancedEcb('country')"
-                 autocomplete="off"/>
+          <input type="text" class="ecb-input" id="ecb-country-input" placeholder="Filter countries…"
+                 oninput="filterAdvancedEcb('country',this.value)" onfocus="openAdvancedEcb('country')" autocomplete="off"/>
           <div class="ecb-dropdown" id="ecb-country-dropdown"></div>
         </div>
       </div>
-
       <div class="adv-control adv-control-tags">
         <div class="adv-tags-row">
           <div class="ecb-wrapper" id="ecb-tags">
-            <input type="text" class="ecb-input" id="ecb-tags-input"
-                   placeholder="Filter tags…"
-                   oninput="filterAdvancedEcb('tags',this.value)"
-                   onfocus="openAdvancedEcb('tags')"
-                   autocomplete="off"/>
+            <input type="text" class="ecb-input" id="ecb-tags-input" placeholder="Filter tags…"
+                   oninput="filterAdvancedEcb('tags',this.value)" onfocus="openAdvancedEcb('tags')" autocomplete="off"/>
             <div class="ecb-dropdown" id="ecb-tags-dropdown"></div>
           </div>
           <div class="mode-toggle">
@@ -141,30 +134,29 @@
           </div>
           <span class="label-pill label-pill-tagsonly" data-i18n="tagsonly"></span>
         </div>
+        <div class="adv-tags-row" style="margin-top:6px">
+          <div class="ecb-wrapper" id="ecb-blacklist">
+            <input type="text" class="ecb-input ecb-input-blacklist" id="ecb-blacklist-input" placeholder="Exclude tags…"
+                   oninput="filterAdvancedEcb('blacklist',this.value)" onfocus="openAdvancedEcb('blacklist')" autocomplete="off"/>
+            <div class="ecb-dropdown" id="ecb-blacklist-dropdown"></div>
+          </div>
+        </div>
       </div>
-
       <div class="adv-control" id="ecb-fanLang">
         <div class="ecb-wrapper">
-          <input type="text" class="ecb-input" id="ecb-fanLang-input"
-                 placeholder="Filter languages…"
-                 oninput="filterAdvancedEcb('fanLang',this.value)"
-                 onfocus="openAdvancedEcb('fanLang')"
-                 autocomplete="off"/>
+          <input type="text" class="ecb-input" id="ecb-fanLang-input" placeholder="Filter languages…"
+                 oninput="filterAdvancedEcb('fanLang',this.value)" onfocus="openAdvancedEcb('fanLang')" autocomplete="off"/>
           <div class="ecb-dropdown" id="ecb-fanLang-dropdown"></div>
         </div>
       </div>
-
       <div class="adv-control adv-control-clear">
         <button class="clear-button" data-i18n="clearall" onclick="clearAdvancedFilters()"></button>
       </div>
-
     </div>
     <div class="advanced-chips-row" id="advanced-chips-row" style="display:none"></div>
   </div>
 
-  <!-- DEVELOPER PANEL -->
   <div id="dev-panel" style="display:none"></div>
-
   <div class="results-count" id="results-count"></div>
 
   <div id="table-view">
@@ -194,14 +186,46 @@
 
 </main>
 
-<!-- TOOLTIP -->
+<!-- ═══════════════════════════════ PAGE: ABOUT ═══════════════════════════════ -->
+<section id="page-about" style="display:none">
+  <div class="page-content-wrap">
+    <div class="page-card about-card">
+      <div class="about-main">
+        <div class="about-text">
+          <h1 class="about-title" data-i18n="abouttitle"></h1>
+          <p data-i18n="aboutdesc"></p>
+        </div>
+        <div class="about-contact">
+          <h2 class="about-contact-title" data-i18n="contacttitle"></h2>
+          <p data-i18n="contactsub"></p>
+          <div class="field"><input id="contact-name"  type="text"  data-i18n-ph="contactname"/></div>
+          <div class="field"><input id="contact-email" type="email" data-i18n-ph="contactemail"/></div>
+          <div class="field"><textarea id="contact-message" data-i18n-ph="contactmsg"></textarea></div>
+          <button class="button-primary" data-i18n="contactsend" onclick="sendContact()"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ PAGE: SETTINGS ════════════════════════════ -->
+<section id="page-settings" style="display:none">
+  <div class="page-content-wrap">
+    <div class="page-card" id="settings-content">
+      <!-- Rendered by renderSettingsPage() -->
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════ TOOLTIP ════════════════════════════════ -->
 <div id="tooltip">
   <img id="tooltip-image" src="" alt=""/>
   <div class="tooltip-fallback" data-i18n="noss" id="tooltip-fallback"></div>
   <div id="tooltip-title"></div>
 </div>
 
-<!-- GAME DETAIL MODAL -->
+<!-- ══════════════════════════════════ MODALS ═════════════════════════════════ -->
+
 <div class="modal-overlay" id="game-detail-modal">
   <div class="modal-content game-detail-content">
     <button class="game-detail-close" onclick="closeModal('game-detail-modal');S.activeModalGameId=null">×</button>
@@ -221,7 +245,6 @@
   </div>
 </div>
 
-<!-- CONFIRM ABANDON -->
 <div class="modal-overlay no-click-close" id="confirm-clear-modal">
   <div class="modal-content">
     <div class="modal-title"    data-i18n="confirmclear"></div>
@@ -233,17 +256,12 @@
   </div>
 </div>
 
-<!-- LOGIN -->
 <div class="modal-overlay" id="login-modal">
   <div class="modal-content">
     <div class="modal-title"    data-i18n="adminlogin"></div>
     <div class="modal-subtitle" data-i18n="adminsub"></div>
-    <div class="field">
-      <input id="login-email"    type="email"    placeholder="admin@example.com" title="Email"/>
-    </div>
-    <div class="field">
-      <input id="login-password" type="password" placeholder="Password"          title="Password"/>
-    </div>
+    <div class="field"><input id="login-email"    type="email"    placeholder="admin@example.com" title="Email"/></div>
+    <div class="field"><input id="login-password" type="password" placeholder="Password"          title="Password"/></div>
     <div class="modal-actions">
       <button class="button-secondary" data-i18n="cancel" onclick="closeModal('login-modal')"></button>
       <button class="button-primary"   data-i18n="login"  onclick="doLogin()"></button>
@@ -252,12 +270,10 @@
   </div>
 </div>
 
-<!-- EDIT / ADD GAME -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal-content large">
     <div class="modal-title" id="edit-modal-title"></div>
     <input type="hidden" id="edit-game-id"/>
-
     <div class="field-row">
       <div class="field">
         <input id="edit-game-title" type="text" placeholder="Título" title="Título"/>
@@ -269,27 +285,20 @@
         <datalist id="developer-list"></datalist>
       </div>
     </div>
-
     <div class="field-row">
+      <div class="field"><select id="edit-game-version" title="Versão RPG Maker"></select></div>
       <div class="field">
-        <select id="edit-game-version" title="Versão RPG Maker"></select>
-      </div>
-      <div class="field">
-        <input id="edit-game-year" type="number" min="1900" max="2099"
-               placeholder="Ano" title="Ano"
+        <input id="edit-game-year" type="number" min="1900" max="2099" placeholder="Ano" title="Ano"
                oninput="if(this.value.length>4)this.value=this.value.slice(0,4)"/>
         <div class="login-error" id="edit-year-error" style="display:none"></div>
       </div>
     </div>
-
     <div class="field">
       <input id="edit-game-country" type="text" list="country-datalist"
              data-i18n-ph="countryph" autocomplete="off" title="País de Origem"/>
       <datalist id="country-datalist"></datalist>
     </div>
-
     <hr class="field-divider"/>
-
     <div class="field">
       <div class="screenshot-field">
         <input id="edit-screenshot-url" type="url" placeholder="Screenshot URL…" title="Screenshot URL"/>
@@ -298,56 +307,48 @@
                onchange="handleScreenshotFile(this)"/>
       </div>
     </div>
-
     <div class="field">
       <div class="download-options">
         <div class="download-option">
-          <input type="radio" name="download-type" id="download-available" value="available"
-                 onchange="toggleDownloadField()" checked/>
-          <label for="download-available" data-i18n="avail"></label>
+          <input type="radio" name="download-type" id="download-available"   value="available" onchange="toggleDownloadField()" checked/>
+          <label for="download-available"   data-i18n="avail"></label>
         </div>
         <div class="download-option">
-          <input type="radio" name="download-type" id="download-unavailable" value="na"
-                 onchange="toggleDownloadField()"/>
+          <input type="radio" name="download-type" id="download-unavailable" value="na"        onchange="toggleDownloadField()"/>
           <label for="download-unavailable" data-i18n="na2"></label>
         </div>
       </div>
       <div id="download-available-fields">
-        <input id="edit-download-url" type="url"
-               data-i18n-ph="sourceph" style="margin-top:6px" title="Source URL"/>
-        <div class="login-error" id="edit-source-error" style="display:none"></div>
-        <input id="edit-archive-url" type="url"
-               data-i18n-ph="archiveph" style="margin-top:6px" title="Archive URL"/>
+        <input id="edit-download-url"  type="url" data-i18n-ph="sourceph"      style="margin-top:6px" title="Source URL"/>
+        <div class="login-error" id="edit-source-error"  style="display:none"></div>
+        <input id="edit-archive-url"   type="url" data-i18n-ph="archiveph"     style="margin-top:6px" title="Archive URL"/>
         <div class="login-error" id="edit-archive-error" style="display:none"></div>
       </div>
+      <div id="download-lost-fields" style="display:none">
+        <input id="edit-proof-url"         type="url" data-i18n-ph="proofph"       style="margin-top:6px" title="Proof URL"/>
+        <input id="edit-lost-archive-url"  type="url" data-i18n-ph="lostarchiveph" style="margin-top:6px" title="Archive.org URL"/>
+        <div class="login-error" id="edit-lost-archive-error" style="display:none"></div>
+      </div>
     </div>
-
     <hr class="field-divider"/>
-
     <div class="field-row">
       <div class="field">
         <input id="edit-fan-lang" type="text" list="fanlang-datalist"
                data-i18n-ph="fanLangph" autocomplete="off" title="Fan-translation language"/>
-        <datalist id="fanlang-datalist">
-          <!-- populated by syncI18n / openEdit -->
-        </datalist>
+        <datalist id="fanlang-datalist"></datalist>
       </div>
       <div class="field">
         <input id="edit-fan-dev" type="text" data-i18n-ph="fanDevph" title="Fan-translation developer"/>
         <div class="login-error" id="edit-fandev-error" style="display:none"></div>
       </div>
     </div>
-
     <hr class="field-divider"/>
-
     <div class="field">
       <div class="edit-tag-ms" id="edit-tag-ms">
         <div class="edit-tag-input-row">
           <input type="text" id="edit-tag-input" data-i18n-ph="tagph"
-                 oninput="onEditTagInput(this.value)"
-                 onkeydown="onEditTagKeydown(event)"
-                 onfocus="renderEditTagDropdown(editForm.tagFilter)"
-                 autocomplete="off" title="Tags"/>
+                 oninput="onEditTagInput(this.value)" onkeydown="onEditTagKeydown(event)"
+                 onfocus="renderEditTagDropdown(editForm.tagFilter)" autocomplete="off" title="Tags"/>
           <span class="ms-arrow" onclick="toggleEditTagDropdown()" style="cursor:pointer;padding:0 4px">▾</span>
         </div>
         <div class="ecb-dropdown" id="edit-tag-dropdown"></div>
@@ -355,7 +356,6 @@
       </div>
       <div class="login-error" data-i18n="tagsrequired" id="edit-tag-error" style="display:none"></div>
     </div>
-
     <div class="modal-actions">
       <button class="button-secondary" data-i18n="cancel" onclick="closeModal('edit-modal')"></button>
       <button class="button-primary"   data-i18n="save"   onclick="saveGame()"></button>
@@ -363,7 +363,6 @@
   </div>
 </div>
 
-<!-- MANAGE VERSIONS -->
 <div class="modal-overlay" id="manage-versions-modal">
   <div class="modal-content large">
     <div class="modal-title" data-i18n="managever"></div>
@@ -379,7 +378,6 @@
   </div>
 </div>
 
-<!-- MANAGE TAGS -->
 <div class="modal-overlay" id="manage-tags-modal">
   <div class="modal-content large">
     <div class="modal-title" data-i18n="managetags"></div>
@@ -393,21 +391,20 @@
   </div>
 </div>
 
-<!-- CONTACT -->
-<div class="modal-overlay" id="contact-modal">
-  <div class="modal-content">
-    <div class="modal-title"    data-i18n="contacttitle"></div>
-    <div class="modal-subtitle" data-i18n="contactsub"></div>
-    <div class="field"><input id="contact-name"  type="text"  placeholder="Seu nome"/></div>
-    <div class="field"><input id="contact-email" type="email" placeholder="seu@email.com"/></div>
-    <div class="field"><textarea id="contact-message" placeholder="…"></textarea></div>
+<div class="modal-overlay" id="manage-users-modal">
+  <div class="modal-content large">
+    <div class="modal-title" data-i18n="manageusers"></div>
+    <input class="manage-input" style="width:100%;margin-bottom:8px"
+           placeholder="Filter users…" oninput="filterUsersList(this.value)"/>
+    <hr class="field-divider"/>
+    <div id="users-list" class="manage-list"></div>
     <div class="modal-actions">
-      <button class="button-secondary" data-i18n="cancel"      onclick="closeModal('contact-modal')"></button>
-      <button class="button-primary"   data-i18n="contactsend" onclick="sendContact()"></button>
+      <button class="button-secondary" data-i18n="cancel" onclick="closeModal('manage-users-modal')"></button>
     </div>
   </div>
 </div>
 
+<!-- Script load order: supabase → data → state → i18n → helpers → render → admin → ui → app-core → app-games -->
 <script src="js/supabase-client.js"></script>
 <script src="js/data.js"></script>
 <script src="js/state.js"></script>
@@ -416,6 +413,8 @@
 <script src="js/render.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/ui.js"></script>
-<script src="js/app.js"></script>
+<script src="js/app-core.js"></script>
+<script src="js/app-games.js"></script>
+
 </body>
 </html>
