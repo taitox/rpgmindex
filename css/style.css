@@ -78,7 +78,7 @@ a { color: var(--color-primary-500); text-decoration: none; }
 .admin-bar-right button { color: #99b8ff; font-weight: 700; text-decoration: underline; font-size: 12px; }
 
 /* ----- MAIN VIEW ----- */
-#main-view { max-width: 1420px; margin: 0 auto; padding: 18px 20px 48px; }
+#page-games { max-width: 1420px; margin: 0 auto; padding: 18px 20px 48px; }
 
 /* ----- CONTROL BAR ----- */
 .control-bar {
@@ -371,7 +371,7 @@ td.col-country   { color: var(--text-muted); text-overflow: ellipsis; }
 @media (max-width: 799px) {
   .topbar  { padding: 8px 14px; }
   .logo-sub, .control-right { display: none; }
-  #main-view { padding: 12px 12px 28px; }
+  #page-games { padding: 12px 12px 28px; }
   .control-bar  { flex-direction: column; align-items: stretch; gap: 6px; }
   .control-left    { flex-direction: column; align-items: stretch; }
   .search-wrapper    { flex: none; }
@@ -1132,4 +1132,13 @@ td.col-version { color: var(--text-muted); font-size: 12.5px; }
 /* ===== USERS MANAGE ROWS ===== */
 .manage-user-view, .manage-user-edit {
   display: flex; align-items: center; gap: 8px; width: 100%;
+}
+
+/* ===== LOST MEDIA LABEL — green like a download badge when Proof URL is set ===== */
+#lost-media-label.lost-media-has-proof {
+  color: #1b6e2e;
+  font-weight: 700;
+}
+#lost-media-label.lost-media-has-proof::before {
+  content: '✓ ';
 }

@@ -315,7 +315,7 @@
         </div>
         <div class="download-option">
           <input type="radio" name="download-type" id="download-unavailable" value="na"        onchange="toggleDownloadField()"/>
-          <label for="download-unavailable" data-i18n="na2"></label>
+          <label for="download-unavailable" id="lost-media-label" data-i18n="na2"></label>
         </div>
       </div>
       <div id="download-available-fields">
@@ -325,7 +325,8 @@
         <div class="login-error" id="edit-archive-error" style="display:none"></div>
       </div>
       <div id="download-lost-fields" style="display:none">
-        <input id="edit-proof-url"         type="url" data-i18n-ph="proofph"       style="margin-top:6px" title="Proof URL"/>
+        <input id="edit-proof-url"         type="url" data-i18n-ph="proofph"       style="margin-top:6px" title="Proof URL"
+               oninput="updateLostMediaLabelStyle()"/>
         <input id="edit-lost-archive-url"  type="url" data-i18n-ph="lostarchiveph" style="margin-top:6px" title="Archive.org URL"/>
         <div class="login-error" id="edit-lost-archive-error" style="display:none"></div>
       </div>

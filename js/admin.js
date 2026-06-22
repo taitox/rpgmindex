@@ -86,12 +86,20 @@ function _initDownloadFields(g) {
   document.getElementById('edit-proof-url').value        = (g && isLost  && g.url)        ? g.url        : '';
   document.getElementById('edit-lost-archive-url').value = (g && isLost  && g.archiveUrl) ? g.archiveUrl : '';
   toggleDownloadField();
+  updateLostMediaLabelStyle();
 }
 
 function toggleDownloadField() {
   var isAvailable = document.getElementById('download-available').checked;
   document.getElementById('download-available-fields').style.display = isAvailable ? '' : 'none';
   document.getElementById('download-lost-fields').style.display      = isAvailable ? 'none' : '';
+}
+
+// Lost Media label turns green (like a download badge) when a Proof URL is present.
+function updateLostMediaLabelStyle() {
+  var proofUrl = document.getElementById('edit-proof-url').value.trim();
+  var label    = document.getElementById('lost-media-label');
+  if (label) label.classList.toggle('lost-media-has-proof', !!proofUrl);
 }
 
 function _validateArchiveUrl(url) {
@@ -141,13 +149,15 @@ async function _deleteScreenshotFromStorage(url) {
 // ── Edit modal tag multi-select ───────────────────────────
 
 function renderEditTagChips() {
-  document.getElementById('edit-tag-chips').innerHTML = editForm.tags.map(function(t) {
-    return '<span class="edit-tag-chip' + (t.isNew ? ' tag-new' : '') + '"' +
-           (t.isNew ? ' title="' + i('newtag') + '"' : '') + '>' +
-           (t.isNew ? '✨ ' : '') + t.name +
-           '<button class="filter-token-remove" onclick="removeEditTag(\'' + t.name.replace(/'/g, "\\'") + '\')">\xd7</button>' +
-           '</span>';
-  }).join('');
+  document.getElementById('edit-tag-chips').innerHTML = editForm.tags
+    .filter(function(t) { return !isProtectedTag(t.name); })
+    .map(function(t) {
+      return '<span class="edit-tag-chip' + (t.isNew ? ' tag-new' : '') + '"' +
+             (t.isNew ? ' title="' + i('newtag') + '"' : '') + '>' +
+             (t.isNew ? '✨ ' : '') + t.name +
+             '<button class="filter-token-remove" onclick="removeEditTag(\'' + t.name.replace(/'/g, "\\'") + '\')">\xd7</button>' +
+             '</span>';
+    }).join('');
 }
 
 function renderEditTagDropdown(filter) {
@@ -157,7 +167,9 @@ function renderEditTagDropdown(filter) {
   var sel     = editForm.tags.map(function(t) { return t.name; });
   var q       = editForm.tagFilter.toLowerCase();
   var matches = TAGS.filter(function(t) {
-    return t.name.toLowerCase().indexOf(q) !== -1 && sel.indexOf(t.name) === -1;
+    return !isProtectedTag(t.name) &&
+           t.name.toLowerCase().indexOf(q) !== -1 &&
+           sel.indexOf(t.name) === -1;
   });
   dd.innerHTML = matches.map(function(t) {
     return '<div class="ecb-option" onclick="toggleEditTag(\'' + t.name.replace(/'/g, "\\'") + '\',false)">' + t.name + '</div>';
