@@ -1,12 +1,9 @@
 'use strict';
 
-// ── Navigation ────────────────────────────────────────────
+// ── About / Settings modals ───────────────────────────────
 
-function navigateTo(page) {
-  S.page = page;
-  history.pushState({ page: page }, '', '#' + page);
-  renderAll();
-}
+function openAboutModal()    { openModal('about-modal'); }
+function openSettingsModal() { renderSettingsPage(); openModal('settings-modal'); }
 
 // ── Search ───────────────────────────────────────────────
 
@@ -318,9 +315,3 @@ document.addEventListener('click', function(e) {
 });
 
 document.addEventListener('mousemove', _positionTooltip);
-
-window.addEventListener('popstate', function(e) {
-  var page = (e.state && e.state.page) || 'games';
-  S.page = page;
-  renderAll();
-});

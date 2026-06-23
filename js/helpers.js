@@ -73,38 +73,40 @@ function adminBtns(g, stopProp) {
          '<button class="action-button delete-button" onclick="' + stop + 'delGame(\'' + id + '\')" title="Delete">🗑️</button>';
 }
 
-function downloadBadge(g) {
+// iconOnly=true renders the Archive button as icon-only when sharing space
+// with a Source button — used in the table. The modal always passes false,
+// so Archive stays labeled even when sharing space with Source there.
+function downloadBadge(g, iconOnly) {
   if (g.isLostMedia) {
     var archiveBtn = g.archiveUrl
       ? '<a href="' + g.archiveUrl + '" target="_blank" rel="noopener"' +
-        ' class="badge badge-download badge-archive" onclick="event.stopPropagation()">📦 Archive</a>'
+        ' class="button-base button-base-sm" onclick="event.stopPropagation()">📦 Archive</a>'
       : '';
     var proofBtn = g.url
       ? '<a href="' + g.url + '" target="_blank" rel="noopener"' +
-        ' class="badge badge-download badge-unavailable" onclick="event.stopPropagation()">🔍 ' + i('na') + '</a>'
-      : '<span class="badge badge-download badge-unavailable">❌ ' + i('na') + '</span>';
+        ' class="button-base button-base-sm" onclick="event.stopPropagation()">🔍 ' + i('na') + '</a>'
+      : '<span class="button-base button-base-sm btn-lost-media-red">❌ ' + i('na') + '</span>';
     return proofBtn + archiveBtn;
   }
 
   var hasSource  = !!g.url;
   var hasArchive = !!g.archiveUrl;
   if (!hasSource && !hasArchive) {
-    return '<span class="badge badge-download badge-unavailable">❌ ' + i('na') + '</span>';
+    return '<span class="button-base button-base-sm btn-lost-media-red">❌ ' + i('na') + '</span>';
   }
   var html = '';
   if (hasSource) {
     var isSteam = g.url.indexOf('store.steampowered.com') !== -1;
     var isItch  = g.url.indexOf('itch.io') !== -1;
     var label   = isSteam ? 'Steam' : isItch ? 'itch.io' : '⬇ ' + i('dl');
-    var cls     = isSteam ? 'badge-steam' : isItch ? 'badge-itchio' : 'badge-free';
     html += '<a href="' + g.url + '" target="_blank" rel="noopener"' +
-            ' class="badge badge-download ' + cls + '" onclick="event.stopPropagation()">' + label + '</a>';
+            ' class="button-base button-base-sm" onclick="event.stopPropagation()">' + label + '</a>';
   }
   if (hasArchive) {
-    var aLabel = hasSource ? '📦' : '📦 Archive';
-    var aCls   = hasSource ? 'badge-archive-icon' : 'badge-archive';
+    var archiveLabel = (hasSource && iconOnly) ? '📦' : '📦 Archive';
+    var archiveCls    = (hasSource && iconOnly) ? 'button-base-icon-only' : '';
     html += '<a href="' + g.archiveUrl + '" target="_blank" rel="noopener"' +
-            ' class="badge badge-download ' + aCls + '" onclick="event.stopPropagation()">' + aLabel + '</a>';
+            ' class="button-base button-base-sm ' + archiveCls + '" onclick="event.stopPropagation()">' + archiveLabel + '</a>';
   }
   return html;
 }

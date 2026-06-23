@@ -26,7 +26,7 @@
 
 <!-- TOP BAR -->
 <header class="topbar">
-  <a class="logo" href="#games" onclick="navigateTo('games');return false">
+  <a class="logo" href="#" onclick="return false">
     <span class="logo-icon">♞</span>
     <div class="logo-text">
       <span class="logo-title">RPGMINDEX</span>
@@ -34,15 +34,11 @@
     </div>
   </a>
   <div class="topbar-right">
-    <select id="lang-select" class="lang-select" onchange="setLang(this.value)">
-      <option value="en">🇺🇸 EN-US</option>
-      <option value="pt" selected>🇧🇷 PT-BR</option>
-    </select>
     <button class="icon-button" id="theme-toggle-button" onclick="toggleTheme()" title="Toggle theme">☀️</button>
-    <button class="button-base topbar-nav-btn" id="about-btn"    onclick="navigateTo('about')"    data-i18n="aboutus"></button>
-    <button class="icon-button topbar-nav-icon" id="about-icon-btn" onclick="navigateTo('about')"    title="About">ℹ️</button>
-    <button class="button-base topbar-nav-btn" id="settings-btn" onclick="navigateTo('settings')" data-i18n="settings"></button>
-    <button class="icon-button topbar-nav-icon" id="settings-icon-btn" onclick="navigateTo('settings')" title="Settings">⚙️</button>
+    <button class="button-base topbar-nav-btn" id="about-btn"    onclick="openAboutModal()"    data-i18n="aboutus"></button>
+    <button class="icon-button topbar-nav-icon" id="about-icon-btn" onclick="openAboutModal()"    title="About">ℹ️</button>
+    <button class="button-base topbar-nav-btn" id="settings-btn" onclick="openSettingsModal()" data-i18n="settings"></button>
+    <button class="icon-button topbar-nav-icon" id="settings-icon-btn" onclick="openSettingsModal()" title="Settings">⚙️</button>
   </div>
 </header>
 
@@ -187,35 +183,40 @@
 </main>
 
 <!-- ═══════════════════════════════ PAGE: ABOUT ═══════════════════════════════ -->
-<section id="page-about" style="display:none">
-  <div class="page-content-wrap">
-    <div class="page-card about-card">
-      <div class="about-main">
-        <div class="about-text">
-          <h1 class="about-title" data-i18n="abouttitle"></h1>
-          <p data-i18n="aboutdesc"></p>
-        </div>
-        <div class="about-contact">
-          <h2 class="about-contact-title" data-i18n="contacttitle"></h2>
-          <p data-i18n="contactsub"></p>
-          <div class="field"><input id="contact-name"  type="text"  data-i18n-ph="contactname"/></div>
-          <div class="field"><input id="contact-email" type="email" data-i18n-ph="contactemail"/></div>
-          <div class="field"><textarea id="contact-message" data-i18n-ph="contactmsg"></textarea></div>
-          <button class="button-primary" data-i18n="contactsend" onclick="sendContact()"></button>
-        </div>
+<div class="modal-overlay" id="about-modal">
+  <div class="modal-content modal-content-shell">
+    <div class="modal-shell-header">
+      <span class="modal-shell-title" data-i18n="abouttitle"></span>
+      <button class="modal-shell-close" onclick="closeModal('about-modal')">×</button>
+    </div>
+    <div class="modal-shell-body about-main">
+      <div class="about-text">
+        <p data-i18n="aboutdesc"></p>
+      </div>
+      <div class="about-contact">
+        <h2 class="about-contact-title" data-i18n="contacttitle"></h2>
+        <p data-i18n="contactsub"></p>
+        <div class="field"><input id="contact-name"  type="text"  data-i18n-ph="contactname"/></div>
+        <div class="field"><input id="contact-email" type="email" data-i18n-ph="contactemail"/></div>
+        <div class="field"><textarea id="contact-message" data-i18n-ph="contactmsg"></textarea></div>
+        <button class="button-primary" data-i18n="contactsend" onclick="sendContact()"></button>
       </div>
     </div>
   </div>
-</section>
+</div>
 
-<!-- ═══════════════════════════════ PAGE: SETTINGS ════════════════════════════ -->
-<section id="page-settings" style="display:none">
-  <div class="page-content-wrap">
-    <div class="page-card" id="settings-content">
+<!-- ═══════════════════════════════ MODAL: SETTINGS ═══════════════════════════ -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal-content modal-content-shell">
+    <div class="modal-shell-header">
+      <span class="modal-shell-title" data-i18n="settings"></span>
+      <button class="modal-shell-close" onclick="closeModal('settings-modal')">×</button>
+    </div>
+    <div class="modal-shell-body" id="settings-content">
       <!-- Rendered by renderSettingsPage() -->
     </div>
   </div>
-</section>
+</div>
 
 <!-- ══════════════════════════════════ TOOLTIP ════════════════════════════════ -->
 <div id="tooltip">
@@ -232,11 +233,11 @@
     <div class="game-detail-screenshot-wrap">
       <img id="game-detail-screenshot" src="" alt=""/>
       <div id="game-detail-screenshot-fallback"></div>
+      <div class="game-detail-title-pill" id="game-detail-title"></div>
     </div>
     <div class="game-detail-body">
       <div class="game-detail-header">
-        <div class="game-detail-title" id="game-detail-title"></div>
-        <div class="game-detail-id"    id="game-detail-id"></div>
+        <div class="game-detail-id" id="game-detail-id"></div>
       </div>
       <div id="game-detail-meta"></div>
       <div id="game-detail-tags"></div>

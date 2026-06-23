@@ -18,9 +18,7 @@
   } catch (_) {}
 
   // Determine initial page from URL hash
-  var hashPage = window.location.hash.replace('#', '');
-  var validPages = ['games', 'about', 'settings'];
-  S.page = validPages.indexOf(hashPage) !== -1 ? hashPage : 'games';
+  S.page = 'games';
 
   // Restore existing Supabase session (does not block on network)
   try {

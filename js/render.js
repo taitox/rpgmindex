@@ -75,37 +75,30 @@ function renderAll() {
   if (window.innerWidth < 800 && S.view !== 'cards') S.view = 'cards';
   document.body.classList.toggle('view-cards', S.view === 'cards');
 
-  // SPA page routing
-  var pages = ['games', 'about', 'settings'];
-  pages.forEach(function(p) {
-    var el = document.getElementById('page-' + p);
-    if (el) el.style.display = S.page === p ? '' : 'none';
-  });
-
   syncI18n();
   renderWarningDiv();
   updateAdminBar();
+  renderAdvancedSearch();
+  renderDevPanel();
+  renderColumnsMenu();
 
-  if (S.page === 'games') {
-    renderAdvancedSearch();
-    renderDevPanel();
-    renderColumnsMenu();
-    var games = sortGames(filterGames());
-    updateResultCount(games.length);
-    if (S.view === 'compact') {
-      document.getElementById('table-view').style.display = '';
-      document.getElementById('cards-view').classList.remove('vis');
-      renderTableHeaders();
-      renderTable(games);
-    } else {
-      document.getElementById('table-view').style.display = 'none';
-      document.getElementById('cards-view').classList.add('vis');
-      renderCards(games);
-    }
-    refreshOpenModal();
-  } else if (S.page === 'settings') {
-    renderSettingsPage();
+  var games = sortGames(filterGames());
+  updateResultCount(games.length);
+  if (S.view === 'compact') {
+    document.getElementById('table-view').style.display = '';
+    document.getElementById('cards-view').classList.remove('vis');
+    renderTableHeaders();
+    renderTable(games);
+  } else {
+    document.getElementById('table-view').style.display = 'none';
+    document.getElementById('cards-view').classList.add('vis');
+    renderCards(games);
   }
+  refreshOpenModal();
+
+  // Settings modal re-renders every cycle if open, so role/profile changes reflect live
+  var settingsModal = document.getElementById('settings-modal');
+  if (settingsModal && settingsModal.classList.contains('open')) renderSettingsPage();
 }
 
 // ── i18n ──────────────────────────────────────────────────
@@ -155,6 +148,14 @@ function renderSettingsPage() {
   if (!S.isAdmin || !S.profile) {
     content.innerHTML =
       '<div class="settings-guest">' +
+        '<div class="settings-lang-row">' +
+          '<label class="settings-lang-label">' + i('language') + '</label>' +
+          '<select id="lang-select" class="lang-select" onchange="setLang(this.value)">' +
+            '<option value="en"' + (S.lang === 'en' ? ' selected' : '') + '>🇺🇸 EN-US</option>' +
+            '<option value="pt"' + (S.lang === 'pt' ? ' selected' : '') + '>🇧🇷 PT-BR</option>' +
+          '</select>' +
+        '</div>' +
+        '<hr class="field-divider"/>' +
         '<p class="settings-intro">' + i('settingsunderconstruction') + '</p>' +
         '<button class="button-primary" onclick="openModal(\'login-modal\')">' + i('adminlogin') + '</button>' +
       '</div>';
@@ -168,13 +169,22 @@ function renderSettingsPage() {
         '<button class="button-base" onclick="openManageVersions()">' + i('managever')  + '</button>' +
         '<button class="button-base" onclick="openManageTags()">'     + i('managetags') + '</button>' +
         '<button class="button-base" onclick="openManageUsers()">'    + i('manageusers') + '</button>' +
-      '</div>'
+        '<button class="button-base" onclick="migrateOrphanGames()">' + i('migrateorphans') + '</button>' +
+      '</div>' +
+      '<p class="settings-note" id="migrate-orphans-result"></p>'
     : '';
 
   content.innerHTML =
     '<div class="settings-profile">' +
       '<span class="settings-username">' + S.profile.username + '</span>' +
       '<span class="badge badge-role badge-role-' + S.profile.role + '">' + roleLbl + '</span>' +
+    '</div>' +
+    '<div class="settings-lang-row">' +
+      '<label class="settings-lang-label">' + i('language') + '</label>' +
+      '<select id="lang-select" class="lang-select" onchange="setLang(this.value)">' +
+        '<option value="en"' + (S.lang === 'en' ? ' selected' : '') + '>🇺🇸 EN-US</option>' +
+        '<option value="pt"' + (S.lang === 'pt' ? ' selected' : '') + '>🇧🇷 PT-BR</option>' +
+      '</select>' +
     '</div>' +
     '<div class="settings-actions">' +
       '<button class="button-base" onclick="triggerPasswordReset()">' + i('changepassword') + '</button>' +
@@ -395,15 +405,15 @@ function gameRow(g) {
     ' onclick="openGameModal(\'' + g.id + '\')"' +
     ' onmouseenter="showTooltip(event,this)"' +
     ' onmouseleave="hideTooltip()">' +
-    '<td class="col-title">' + g.title + '</td>' +
+    '<td class="col-title">' + (g.fanLang ? '🌐 ' : '') + g.title + '</td>' +
     (S.cols.developer ? '<td class="col-developer">' + devLinks(g.developer) + '</td>' : '') +
-    (S.cols.country   ? '<td class="col-country col-search-link" data-search="' + esc(g.country) + '" onclick="event.stopPropagation();toggleCountry(this.dataset.search)">' + countryWithFlag(g.country) + '</td>' : '') +
-    (S.cols.year      ? '<td class="col-year col-search-link" data-search="' + g.year + '" onclick="event.stopPropagation();toggleYear(parseInt(this.dataset.search,10))">' + g.year + '</td>' : '') +
-    (S.cols.version   ? '<td class="col-version">' + verName + '</td>' : '') +
+    (S.cols.country   ? '<td class="col-country"><span class="col-search-link" data-search="' + esc(g.country) + '" onclick="event.stopPropagation();toggleCountry(this.dataset.search)">' + countryWithFlag(g.country) + '</span></td>' : '') +
+    (S.cols.year      ? '<td class="col-year"><span class="col-search-link" data-search="' + g.year + '" onclick="event.stopPropagation();toggleYear(parseInt(this.dataset.search,10))">' + g.year + '</span></td>' : '') +
+    (S.cols.version   ? '<td class="col-version"><span class="col-search-link" data-search="' + g.vId + '" onclick="event.stopPropagation();toggleVersion(this.dataset.search)">' + verName + '</span></td>' : '') +
     (S.cols.tags      ? '<td class="col-tags"><div class="badge-wrapper">' + g.tags.map(tagBadge).join('') + '</div></td>' : '') +
     (S.cols.fanLang   ? '<td class="col-fan-lang">' + (g.fanLang || '—') + '</td>' : '') +
     (fanDevVisible    ? '<td class="col-fan-dev">'  + (g.fanDev  || '—') + '</td>' : '') +
-    '<td class="col-download"><div class="badge-wrapper">' + downloadBadge(g) + '</div></td>' +
+    '<td class="col-download"><div class="badge-wrapper">' + downloadBadge(g, true) + '</div></td>' +
     (S.isAdmin ? '<td><div class="action-buttons">' + adminBtns(g, true) + '</div></td>' : '') +
     '</tr>';
 }
@@ -425,23 +435,20 @@ function gameCard(g, idx) {
     ? '<span class="badge badge-tag" onclick="event.stopPropagation();openGameModal(\'' + g.id + '\')">' + extra + '+ tags</span>'
     : '';
   var translationRow = g.fanLang
-    ? '<div class="card-translation">' +
-        '<span class="label-pill label-pill-translation">TRANSLATION</span>' +
-        '<span>' + g.fanLang + (g.fanDev ? ' · ' + g.fanDev : '') + '</span>' +
-      '</div>'
+    ? '<div class="card-translation">🌐 ' + g.fanLang + ' translation by ' + (g.fanDev || '—') + '</div>'
     : '';
 
   return '<div class="card" style="animation-delay:' + Math.min(idx * 25, 200) + 'ms" onclick="openGameModal(\'' + g.id + '\')">' +
     ss +
     '<div class="card-screenshot-fallback" style="' + (g.ss ? 'display:none' : 'display:flex') + '" data-i18n="noss"></div>' +
     '<div class="card-body">' +
-      '<div class="card-title">' + g.title + '</div>' +
+      '<div class="card-title">' + (g.fanLang ? '🌐 ' : '') + g.title + '</div>' +
       '<div class="card-developer">' +
         '<div class="card-dev-name">' + devLinks(g.developer) + '</div>' +
         '<span class="card-dev-meta"> · ' + g.year + ' · ' + countryWithFlag(g.country) + '</span>' +
       '</div>' +
-      '<div class="card-badges badge-wrapper">' + versionBadge(g.vId) + visible.map(tagBadge).join('') + extraBtn + '</div>' +
       translationRow +
+      '<div class="card-badges badge-wrapper">' + versionBadge(g.vId) + visible.map(tagBadge).join('') + extraBtn + '</div>' +
     '</div>' +
     '<div class="card-footer">' +
       '<div></div>' +
@@ -473,8 +480,12 @@ function openGameModal(gameId) {
   if (g.ss) { ssImg.src = g.ss; ssImg.style.display = 'block'; ssFb.style.display = 'none'; }
   else       { ssImg.style.display = 'none'; ssFb.style.display = 'flex'; ssFb.textContent = i('noss'); }
 
-  setText('game-detail-title', g.title);
-  setText('game-detail-id',    '#' + g.id);
+  var titlePill = document.getElementById('game-detail-title');
+  if (titlePill) titlePill.textContent = (g.fanLang ? '🌐 ' : '') + g.title;
+
+  var idEl = document.getElementById('game-detail-id');
+  if (idEl) idEl.textContent = S.isAdmin ? '#' + g.id : '';
+
   _renderModalMeta(g);
   _renderModalTags(g);
 
@@ -510,7 +521,11 @@ function _renderModalMeta(g) {
 }
 
 function _renderModalTags(g) {
+  var translationLine = g.fanLang
+    ? '<div class="card-translation">🌐 ' + g.fanLang + ' translation by ' + (g.fanDev || '—') + '</div>'
+    : '';
   document.getElementById('game-detail-tags').innerHTML =
+    translationLine +
     '<div class="badge-wrapper">' + versionBadge(g.vId) + g.tags.map(tagBadge).join('') + '</div>';
 }
 

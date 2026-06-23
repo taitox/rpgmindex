@@ -32,7 +32,8 @@ async function doLogout() {
   S.session = null;
   S.isAdmin = false;
   S.profile = null;
-  navigateTo('games');
+  closeModal('settings-modal');
+  renderAll();
 }
 
 // ── Edit / Add game ───────────────────────────────────────
@@ -735,4 +736,25 @@ async function deleteUser(userId) {
   if (result.error) { console.error('User delete failed:', result.error.message); return; }
   await loadProfiles();
   renderUsersList();
+}
+
+// ── Orphan game migration (Archiver only) ─────────────────
+// Resolves taito@disroot.org's current username server-side and assigns
+// every game with a null signed_by to them. One-off manual action.
+
+async function migrateOrphanGames() {
+  if (!isArchiver()) return;
+  var resultEl = document.getElementById('migrate-orphans-result');
+  showLoading();
+  var rpcResult = await sb.rpc('assign_orphan_games', { target_email: 'taito@disroot.org' });
+  hideLoading();
+  if (rpcResult.error) {
+    console.error('Orphan migration failed:', rpcResult.error.message);
+    if (resultEl) resultEl.textContent = i('migrateorphanserror');
+    return;
+  }
+  var count = rpcResult.data;
+  if (resultEl) resultEl.textContent = count > 0 ? i('migrateorphansresult', count) : i('migrateorphansnone');
+  await loadData();
+  renderAll();
 }
