@@ -24,7 +24,7 @@ let S = {
     years:         [],
     tags:          [],
     blacklistTags: [],
-    tagMode:       'and',
+    tagModeAll:    true,
     fanLangs:      [],
   },
 

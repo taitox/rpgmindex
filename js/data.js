@@ -63,10 +63,12 @@ let PENDING_ACTIONS = [];
 
 let _versionsInUse  = [];
 let _countriesInUse = [];
+let _fanLangsInUse  = [];
 let _devList        = [];
 
 function getVersionsInUse()  { return _versionsInUse;  }
 function getCountriesInUse() { return _countriesInUse; }
+function getFanLangsInUse()  { return _fanLangsInUse;  }
 function getDevList()        { return _devList;        }
 
 function countryFlag(name) {
@@ -187,6 +189,7 @@ async function loadData() {
   const usedVIds  = new Set(GAMES.map(function(g) { return g.vId; }).filter(Boolean));
   _versionsInUse  = VERSIONS.filter(function(v) { return usedVIds.has(v.id); });
   _countriesInUse = Array.from(new Set(GAMES.map(function(g) { return g.country; }).filter(Boolean))).sort();
+  _fanLangsInUse  = Array.from(new Set(GAMES.map(function(g) { return g.fanLang; }).filter(Boolean))).sort();
   _devList        = Array.from(new Set(GAMES.map(function(g) { return g.developer; }).filter(Boolean))).sort();
 
   S.loading = false;

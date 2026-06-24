@@ -30,8 +30,6 @@ function isMod() {
   return !!(S.profile && S.profile.role === 'mod');
 }
 
-// An admin can edit a game if they are an archiver (any game)
-// or a mod who originally signed the game.
 function canEditGame(g) {
   if (!S.isAdmin || !S.profile) return false;
   if (isArchiver()) return true;
@@ -60,55 +58,64 @@ function devLinks(dev) {
 // ── Badge / chip builders ─────────────────────────────────
 
 function makeChip(label, onclickExpr, cssClass) {
-  return '<span class="adv-chip ' + cssClass + '">' + label +
-         '<button onclick="' + onclickExpr + '" aria-label="Remove">\xd7</button></span>';
+  return '<span class="filter-chip ' + cssClass + '">' + label +
+         '<button class="filter-chip-remove" onclick="' + onclickExpr + '" aria-label="Remove">' +
+         '<i data-lucide="x"></i></button></span>';
 }
 
-// g is the full game object — needed for canEditGame() role check.
+// Renders a "Clear group" pill matching tag styling but neutral gray, no border.
+// Shown only when its parent chip-group is hovered (handled via CSS) and the group has 2+ entries.
+function makeClearGroupChip(onclickExpr) {
+  return '<button class="filter-chip filter-chip-clear-group" onclick="' + onclickExpr + '">' +
+         '<i data-lucide="x"></i> ' + i('clearall') + '</button>';
+}
+
 function adminBtns(g, stopProp) {
   if (!S.isAdmin || !canEditGame(g)) return '';
   var stop = stopProp ? 'event.stopPropagation();' : '';
   var id   = g.id;
-  return '<button class="action-button" onclick="' + stop + 'openEdit(\'' + id + '\')" title="' + i('editgame') + '">✏️</button>' +
-         '<button class="action-button delete-button" onclick="' + stop + 'delGame(\'' + id + '\')" title="Delete">🗑️</button>';
+  return '<button class="icon-button-ghost" onclick="' + stop + 'openEdit(\'' + id + '\')" title="' + i('editgame') + '"><i data-lucide="pencil"></i></button>' +
+         '<button class="icon-button-ghost icon-button-ghost-danger" onclick="' + stop + 'delGame(\'' + id + '\')" title="Delete"><i data-lucide="trash-2"></i></button>';
 }
 
-// iconOnly=true renders the Archive button as icon-only when sharing space
-// with a Source button — used in the table. The modal always passes false,
-// so Archive stays labeled even when sharing space with Source there.
-function downloadBadge(g, iconOnly) {
+// Single-button download priority resolution:
+// Lost Media + Archive  -> Archive
+// Lost Media, no Archive -> Lost Media (disabled/red state)
+// Available + Store URL  -> Store (Steam/itch.io)
+// Available + plain URL  -> Download
+// Available, no URL, has Archive -> Archive
+// sizeClass: 'button-base-sm' (table cells) or 'button-base-md' (modal, cards)
+function downloadBadge(g, sizeClass) {
+  var cls = sizeClass || 'button-base-md';
+
   if (g.isLostMedia) {
-    var archiveBtn = g.archiveUrl
-      ? '<a href="' + g.archiveUrl + '" target="_blank" rel="noopener"' +
-        ' class="button-base button-base-sm" onclick="event.stopPropagation()">📦 Archive</a>'
-      : '';
-    var proofBtn = g.url
-      ? '<a href="' + g.url + '" target="_blank" rel="noopener"' +
-        ' class="button-base button-base-sm" onclick="event.stopPropagation()">🔍 ' + i('na') + '</a>'
-      : '<span class="button-base button-base-sm btn-lost-media-red">❌ ' + i('na') + '</span>';
-    return proofBtn + archiveBtn;
+    if (g.archiveUrl) {
+      return '<a href="' + g.archiveUrl + '" target="_blank" rel="noopener"' +
+             ' class="button-base ' + cls + '" onclick="event.stopPropagation()">' +
+             '<i data-lucide="archive"></i> Archive</a>';
+    }
+    return '<span class="button-base ' + cls + ' btn-lost-media-red">' +
+           '<i data-lucide="ghost"></i> ' + i('na') + '</span>';
   }
 
-  var hasSource  = !!g.url;
-  var hasArchive = !!g.archiveUrl;
-  if (!hasSource && !hasArchive) {
-    return '<span class="button-base button-base-sm btn-lost-media-red">❌ ' + i('na') + '</span>';
-  }
-  var html = '';
-  if (hasSource) {
+  if (g.url) {
     var isSteam = g.url.indexOf('store.steampowered.com') !== -1;
     var isItch  = g.url.indexOf('itch.io') !== -1;
-    var label   = isSteam ? 'Steam' : isItch ? 'itch.io' : '⬇ ' + i('dl');
-    html += '<a href="' + g.url + '" target="_blank" rel="noopener"' +
-            ' class="button-base button-base-sm" onclick="event.stopPropagation()">' + label + '</a>';
+    var icon    = isSteam ? 'gamepad-2' : isItch ? 'gamepad-2' : 'download';
+    var label   = isSteam ? 'Steam' : isItch ? 'itch.io' : i('dl');
+    return '<a href="' + g.url + '" target="_blank" rel="noopener"' +
+           ' class="button-base ' + cls + '" onclick="event.stopPropagation()">' +
+           '<i data-lucide="' + icon + '"></i> ' + label + '</a>';
   }
-  if (hasArchive) {
-    var archiveLabel = (hasSource && iconOnly) ? '📦' : '📦 Archive';
-    var archiveCls    = (hasSource && iconOnly) ? 'button-base-icon-only' : '';
-    html += '<a href="' + g.archiveUrl + '" target="_blank" rel="noopener"' +
-            ' class="button-base button-base-sm ' + archiveCls + '" onclick="event.stopPropagation()">' + archiveLabel + '</a>';
+
+  if (g.archiveUrl) {
+    return '<a href="' + g.archiveUrl + '" target="_blank" rel="noopener"' +
+           ' class="button-base ' + cls + '" onclick="event.stopPropagation()">' +
+           '<i data-lucide="archive"></i> Archive</a>';
   }
-  return html;
+
+  return '<span class="button-base ' + cls + ' btn-lost-media-red">' +
+         '<i data-lucide="ghost"></i> ' + i('na') + '</span>';
 }
 
 function versionBadge(vId, showIcon) {
@@ -130,6 +137,20 @@ function tagBadge(tagName) {
   return '<span class="badge badge-tag' + (isActive ? ' active-filter' : '') + '" ' + style +
          ' onclick="event.stopPropagation();toggleTag(\'' + tagName.replace(/'/g, "\\'") + '\')"' +
          ' role="button" tabindex="0">' + tagName + '</span>';
+}
+
+// Clickable span for fan-translation language/dev — opens Advanced Search filtered by language.
+function fanLangLink(g) {
+  if (!g.fanLang) return '—';
+  return '<span class="col-search-link" data-search="' + g.fanLang.replace(/"/g, '&quot;') + '"' +
+         ' onclick="event.stopPropagation();toggleFanLang(this.dataset.search)">' + g.fanLang + '</span>';
+}
+
+function fanDevLink(g) {
+  if (!g.fanDev) return '—';
+  var esc = g.fanDev.replace(/"/g, '&quot;');
+  return '<span class="col-search-link" data-search="' + esc + '"' +
+         ' onclick="event.stopPropagation();searchBy(this.dataset.search)">' + g.fanDev + '</span>';
 }
 
 // ── Filter pipeline ───────────────────────────────────────
@@ -158,9 +179,9 @@ function filterGames() {
     if (f.blacklistTags.length &&
         f.blacklistTags.some(function(t) { return g.tags.indexOf(t) !== -1; })) return false;
     if (f.tags.length) {
-      var ok = f.tagMode === 'or'
-        ? f.tags.some(function(t)  { return g.tags.indexOf(t) !== -1; })
-        : f.tags.every(function(t) { return g.tags.indexOf(t) !== -1; });
+      var ok = f.tagModeAll
+        ? f.tags.every(function(t) { return g.tags.indexOf(t) !== -1; })
+        : f.tags.some(function(t)  { return g.tags.indexOf(t) !== -1; });
       if (!ok) return false;
     }
     return true;

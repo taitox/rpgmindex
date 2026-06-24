@@ -13,7 +13,7 @@ const T = {
     clearall: 'Limpar tudo',
     found:    function(n) { return n + ' jogo' + (n !== 1 ? 's' : '') + ' encontrado' + (n !== 1 ? 's' : ''); },
     loading:  'Carregando…', advsearch: 'Busca Avançada', sortby: 'Ordenar por',
-    tagsonly: 'Apenas tags',
+    musthavealltags: 'Deve ter todas as tags selecionadas',
 
     title: 'Título', dev: 'Dev', ver: 'Versão', yr: 'Ano', country: 'País', tags: 'Tags',
     dl: 'Download', na: 'Lost Media', noss: 'Sem screenshot disponível.',
@@ -68,7 +68,12 @@ const T = {
 
     // Settings page
     settings: 'Configurações', aboutus: 'Sobre',
+    language: 'Idioma',
     settingsunderconstruction: 'Configurações — em construção.',
+    migrateorphans: 'Atribuir jogos órfãos a Tengu',
+    migrateorphansresult: function(n) { return n + ' jogo' + (n !== 1 ? 's' : '') + ' órfão' + (n !== 1 ? 's' : '') + ' atribuído' + (n !== 1 ? 's' : '') + ' a Tengu.'; },
+    migrateorphansnone: 'Nenhum jogo órfão encontrado.',
+    migrateorphanserror: 'Não foi possível localizar o usuário Tengu.',
     changepassword: 'Alterar senha',
     passwordresetsentto: function(e) { return 'E-mail de redefinição enviado para ' + e + '.'; },
     roleArchiver: 'Arquivista', roleMod: 'Moderador',
@@ -97,7 +102,7 @@ const T = {
     clearall: 'Clear all',
     found:    function(n) { return n + ' game' + (n !== 1 ? 's' : '') + ' found'; },
     loading:  'Loading…', advsearch: 'Advanced Search', sortby: 'Sort by',
-    tagsonly: 'Tags only',
+    musthavealltags: 'Must have all selected tags',
 
     title: 'Title', dev: 'Developer', ver: 'Version', yr: 'Year', country: 'Country', tags: 'Tags',
     dl: 'Download', na: 'Lost Media', noss: 'No screenshot available.',
@@ -152,7 +157,12 @@ const T = {
 
     // Settings page
     settings: 'Settings', aboutus: 'About',
+    language: 'Language',
     settingsunderconstruction: 'Settings — under construction.',
+    migrateorphans: 'Assign orphan games to Tengu',
+    migrateorphansresult: function(n) { return n + ' orphan game' + (n !== 1 ? 's' : '') + ' assigned to Tengu.'; },
+    migrateorphansnone: 'No orphan games found.',
+    migrateorphanserror: 'Could not locate the Tengu user.',
     changepassword: 'Change password',
     passwordresetsentto: function(e) { return 'Password reset email sent to ' + e + '.'; },
     roleArchiver: 'Archiver', roleMod: 'Mod',

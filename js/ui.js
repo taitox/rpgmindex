@@ -13,22 +13,26 @@ function onSearch(value) {
   _searchTimer = setTimeout(function() { S.filters.search = value; renderAll(); }, 200);
 }
 
+// Used by fan-translation-developer cells — sets the free-text search field.
+function searchBy(term) {
+  S.filters.search = String(term);
+  var searchInput = document.getElementById('search');
+  if (searchInput) searchInput.value = String(term);
+  renderAll();
+}
+
 // ── ECB interactions ──────────────────────────────────────
+// The input never stays empty while a value is selected — it always shows
+// the first-selected option's label, restored by renderEcbInputDisplay().
 
 function openAdvancedEcb(name) {
   S.openDropdown = 'ecb-' + name + '-dropdown';
-  var input = document.getElementById('ecb-' + name + '-input');
-  renderEcbDropdown(name, input ? input.value : '');
+  renderEcbDropdown(name, '');
 }
 
 function filterAdvancedEcb(name, query) {
   S.openDropdown = 'ecb-' + name + '-dropdown';
   renderEcbDropdown(name, query);
-}
-
-function _clearEcbInput(name) {
-  var input = document.getElementById('ecb-' + name + '-input');
-  if (input) input.value = '';
 }
 
 // ── Advanced Search Panel ────────────────────────────────
@@ -54,6 +58,7 @@ function resetAdvancedFilters() {
   S.filters.tags          = [];
   S.filters.blacklistTags = [];
   S.filters.fanLangs      = [];
+  Object.keys(ECB_SELECTION_ORDER).forEach(function(name) { ECB_SELECTION_ORDER[name] = []; });
 }
 
 function clearAdvancedFilters() { resetAdvancedFilters(); renderAll(); }
@@ -67,18 +72,33 @@ function confirmClearClose() {
   renderAll();
 }
 
+// Clears only the "Selected tags" chip group (tags + their selection order),
+// leaving versions/countries/years/fanLangs/blacklist untouched.
+function clearSelectedTagsGroup() {
+  S.filters.tags = [];
+  ECB_SELECTION_ORDER.tags = [];
+  renderAll();
+}
+
+// Clears only the "Blacklisted tags" chip group.
+function clearBlacklistGroup() {
+  S.filters.blacklistTags = [];
+  ECB_SELECTION_ORDER.blacklist = [];
+  renderAll();
+}
+
 // ── Filter toggles ───────────────────────────────────────
 
 function toggleVersion(vId) {
-  toggleInArray(S.filters.versions, vId);
-  _clearEcbInput('version');
+  var isNowSelected = toggleInArrayReturningState(S.filters.versions, vId);
+  recordEcbSelection('version', vId, isNowSelected);
   S.advancedOpen = true;
   renderAll();
 }
 
 function toggleCountry(country) {
-  toggleInArray(S.filters.countries, country);
-  _clearEcbInput('country');
+  var isNowSelected = toggleInArrayReturningState(S.filters.countries, country);
+  recordEcbSelection('country', country, isNowSelected);
   S.advancedOpen = true;
   renderAll();
 }
@@ -91,30 +111,45 @@ function toggleYear(year) {
 
 function toggleTag(tag) {
   var blackIdx = S.filters.blacklistTags.indexOf(tag);
-  if (blackIdx >= 0) S.filters.blacklistTags.splice(blackIdx, 1);
-  toggleInArray(S.filters.tags, tag);
-  _clearEcbInput('tags');
+  if (blackIdx >= 0) {
+    S.filters.blacklistTags.splice(blackIdx, 1);
+    recordEcbSelection('blacklist', tag, false);
+  }
+  var isNowSelected = toggleInArrayReturningState(S.filters.tags, tag);
+  recordEcbSelection('tags', tag, isNowSelected);
   S.advancedOpen = true;
   renderAll();
 }
 
 function toggleBlacklistTag(tag) {
   var selIdx = S.filters.tags.indexOf(tag);
-  if (selIdx >= 0) S.filters.tags.splice(selIdx, 1);
-  toggleInArray(S.filters.blacklistTags, tag);
-  _clearEcbInput('blacklist');
+  if (selIdx >= 0) {
+    S.filters.tags.splice(selIdx, 1);
+    recordEcbSelection('tags', tag, false);
+  }
+  var isNowSelected = toggleInArrayReturningState(S.filters.blacklistTags, tag);
+  recordEcbSelection('blacklist', tag, isNowSelected);
   S.advancedOpen = true;
   renderAll();
 }
 
 function toggleFanLang(lang) {
-  toggleInArray(S.filters.fanLangs, lang);
-  _clearEcbInput('fanLang');
+  var isNowSelected = toggleInArrayReturningState(S.filters.fanLangs, lang);
+  recordEcbSelection('fanLang', lang, isNowSelected);
   S.advancedOpen = true;
   renderAll();
 }
 
-function setTagMode(mode) { S.filters.tagMode = mode; renderAll(); }
+// Same semantics as toggleInArray, but returns whether the item ended up selected —
+// needed so callers can update ECB_SELECTION_ORDER without a second indexOf check.
+function toggleInArrayReturningState(arr, item) {
+  var idx = arr.indexOf(item);
+  if (idx >= 0) { arr.splice(idx, 1); return false; }
+  arr.push(item);
+  return true;
+}
+
+function setTagModeAll(checked) { S.filters.tagModeAll = !!checked; renderAll(); }
 
 function clearFilters() {
   S.filters.search = '';
@@ -143,13 +178,12 @@ function toggleDev(devName) {
 function toggleColumn(key) {
   S.cols[key] = !S.cols[key];
 
-  // When hiding a column clear its associated filters
   if (!S.cols[key]) {
     var clearMap = {
-      version: function() { S.filters.versions  = []; },
-      country: function() { S.filters.countries = []; },
+      version: function() { S.filters.versions  = []; ECB_SELECTION_ORDER.version = []; },
+      country: function() { S.filters.countries = []; ECB_SELECTION_ORDER.country = []; },
       year:    function() { S.filters.years     = []; },
-      fanLang: function() { S.filters.fanLangs  = []; },
+      fanLang: function() { S.filters.fanLangs  = []; ECB_SELECTION_ORDER.fanLang = []; },
     };
     if (clearMap[key]) clearMap[key]();
   }
@@ -197,6 +231,7 @@ function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   try { localStorage.setItem('rpgmkbr-theme', theme); } catch (_) {}
   syncI18n();
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function setLang(lang) {
@@ -213,7 +248,8 @@ function toggleWarningExpand() {
   var list = document.getElementById('warning-actions-list');
   var btn  = document.getElementById('warning-toggle-btn');
   if (list) list.style.display = S.warningExpanded ? '' : 'none';
-  if (btn)  btn.textContent    = S.warningExpanded ? '▾' : '▸';
+  if (btn)  btn.innerHTML       = S.warningExpanded ? '<i data-lucide="chevron-down"></i>' : '<i data-lucide="chevron-right"></i>';
+  if (window.lucide) window.lucide.createIcons();
 }
 
 // ── Global spinner ────────────────────────────────────────

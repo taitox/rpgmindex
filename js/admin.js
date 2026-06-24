@@ -80,8 +80,7 @@ function openEdit(gameId) {
 
 function _initDownloadFields(g) {
   var isLost = !!(g && g.isLostMedia);
-  document.getElementById('download-available').checked   = !isLost;
-  document.getElementById('download-unavailable').checked = isLost;
+  document.getElementById('lost-media-switch').checked = isLost;
   document.getElementById('edit-download-url').value     = (g && !isLost && g.url)        ? g.url        : '';
   document.getElementById('edit-archive-url').value      = (g && !isLost && g.archiveUrl) ? g.archiveUrl : '';
   document.getElementById('edit-proof-url').value        = (g && isLost  && g.url)        ? g.url        : '';
@@ -91,9 +90,9 @@ function _initDownloadFields(g) {
 }
 
 function toggleDownloadField() {
-  var isAvailable = document.getElementById('download-available').checked;
-  document.getElementById('download-available-fields').style.display = isAvailable ? '' : 'none';
-  document.getElementById('download-lost-fields').style.display      = isAvailable ? 'none' : '';
+  var isLostMedia = document.getElementById('lost-media-switch').checked;
+  document.getElementById('download-available-fields').style.display = isLostMedia ? 'none' : '';
+  document.getElementById('download-lost-fields').style.display      = isLostMedia ? '' : 'none';
 }
 
 // Lost Media label turns green (like a download badge) when a Proof URL is present.
@@ -248,8 +247,8 @@ async function saveGame() {
     document.getElementById('edit-game-year').classList.remove('field-error');
   }
 
-  var isAvailable    = document.getElementById('download-available').checked;
-  var isLostMedia    = !isAvailable;
+  var isLostMedia    = document.getElementById('lost-media-switch').checked;
+  var isAvailable    = !isLostMedia;
   var sourceUrl      = document.getElementById('edit-download-url').value.trim();
   var availArchive   = document.getElementById('edit-archive-url').value.trim();
   var proofUrl       = document.getElementById('edit-proof-url').value.trim();
@@ -450,9 +449,9 @@ function renderVersionsList() {
   list.innerHTML = VERSIONS.map(function(v) {
     var inUse  = GAMES.some(function(g) { return g.vId === v.id; });
     var iconBtn = v.iconUrl
-      ? '<button class="icon-button" onclick="deleteVersionIcon(\'' + v.id + '\',\'' + v.iconUrl + '\')" title="' + i('deleteicon') + '">🗑️</button>' +
+      ? '<button class="icon-button-ghost" onclick="deleteVersionIcon(\'' + v.id + '\',\'' + v.iconUrl + '\')" title="' + i('deleteicon') + '"><i data-lucide="trash-2"></i></button>' +
         '<img src="' + v.iconUrl + '" class="version-icon-preview" alt=""/>'
-      : '<button class="icon-button" onclick="document.getElementById(\'vicon-input-' + v.id + '\').click()" title="' + i('uploadicon') + '">📤</button>';
+      : '<button class="icon-button-ghost" onclick="document.getElementById(\'vicon-input-' + v.id + '\').click()" title="' + i('uploadicon') + '"><i data-lucide="upload"></i></button>';
     return '<div class="manage-row" id="vrow-' + v.id + '">' +
       '<div class="ver-view" id="vview-' + v.id + '">' +
         iconBtn +
@@ -460,21 +459,22 @@ function renderVersionsList() {
                ' onchange="uploadVersionIcon(\'' + v.id + '\',this)"/>' +
         '<span class="manage-ver-name">' + v.name + '</span>' +
         '<span class="manage-spacer"></span>' +
-        '<button class="icon-button" onclick="startEditVersion(\'' + v.id + '\')" title="Edit">✏️</button>' +
+        '<button class="icon-button-ghost" onclick="startEditVersion(\'' + v.id + '\')" title="Edit"><i data-lucide="pencil"></i></button>' +
       '</div>' +
       '<div class="ver-edit" id="vedit-' + v.id + '" style="display:none">' +
-        '<button class="icon-button" onclick="document.getElementById(\'vicon-input-edit-' + v.id + '\').click()" title="' + i('uploadicon') + '">📤</button>' +
+        '<button class="icon-button-ghost" onclick="document.getElementById(\'vicon-input-edit-' + v.id + '\').click()" title="' + i('uploadicon') + '"><i data-lucide="upload"></i></button>' +
         '<input type="file" id="vicon-input-edit-' + v.id + '" accept="image/*" style="display:none"' +
                ' onchange="uploadVersionIcon(\'' + v.id + '\',this)"/>' +
         '<input class="manage-input" id="vname-' + v.id + '" value="' + (v.name || '').replace(/"/g,'&quot;') + '" style="flex:2"/>' +
-        '<button class="icon-button manage-delete-btn" id="vdel-' + v.id + '"' +
-                ' onclick="handleVersionDeleteClick(\'' + v.id + '\',' + inUse + ')" title="Delete">🗑️</button>' +
+        '<button class="icon-button-ghost icon-button-ghost-danger" id="vdel-' + v.id + '"' +
+                ' onclick="handleVersionDeleteClick(\'' + v.id + '\',' + inUse + ')" title="Delete"><i data-lucide="trash-2"></i></button>' +
         '<span class="manage-warn" id="vwarn-' + v.id + '" style="display:none">' + i('deleteconfirm') + '</span>' +
-        '<button class="icon-button" onclick="saveVersion(\'' + v.id + '\')" title="Confirm">✔️</button>' +
-        '<button class="icon-button" onclick="cancelEditVersion(\'' + v.id + '\')" title="Cancel">✕</button>' +
+        '<button class="icon-button-ghost" onclick="saveVersion(\'' + v.id + '\')" title="Confirm"><i data-lucide="check"></i></button>' +
+        '<button class="icon-button-ghost" onclick="cancelEditVersion(\'' + v.id + '\')" title="Cancel"><i data-lucide="x"></i></button>' +
       '</div>' +
     '</div>';
   }).join('');
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function startEditVersion(vId) {
@@ -575,17 +575,18 @@ function renderTagsList() {
         '<span class="manage-tag-name">' + t.name + '</span>' +
         (isProtected ? '<span class="badge badge-role" style="font-size:10px;margin-left:4px">protected</span>' : '') +
         '<span class="manage-spacer"></span>' +
-        (!isProtected ? '<button class="icon-button" onclick="startRenameTag(\'' + t.name.replace(/'/g,"\\'") + '\')" title="Edit">✏️</button>' : '') +
-        (!isProtected ? '<button class="icon-button manage-delete-btn" onclick="queueDeleteTag(\'' + t.name.replace(/'/g,"\\'") + '\')" title="Delete">🗑️</button>' : '') +
+        (!isProtected ? '<button class="icon-button-ghost" onclick="startRenameTag(\'' + t.name.replace(/'/g,"\\'") + '\')" title="Edit"><i data-lucide="pencil"></i></button>' : '') +
+        (!isProtected ? '<button class="icon-button-ghost icon-button-ghost-danger" onclick="queueDeleteTag(\'' + t.name.replace(/'/g,"\\'") + '\')" title="Delete"><i data-lucide="trash-2"></i></button>' : '') +
       '</span>' +
       '<span class="manage-tag-edit" id="tedit-' + t.name + '" style="display:none">' +
         '<input class="manage-input" id="trename-' + t.name + '" value="' + t.name.replace(/"/g,'&quot;') + '"/>' +
         '<span class="merge-warning" id="tmwarn-' + t.name + '" style="display:none">' + i('mergewarning') + '</span>' +
-        '<button class="icon-button" onclick="saveRenameTag(\'' + t.name.replace(/'/g,"\\'") + '\')" title="Confirm">✔️</button>' +
-        '<button class="icon-button" onclick="cancelRenameTag(\'' + t.name.replace(/'/g,"\\'") + '\')" title="Cancel">✕</button>' +
+        '<button class="icon-button-ghost" onclick="saveRenameTag(\'' + t.name.replace(/'/g,"\\'") + '\')" title="Confirm"><i data-lucide="check"></i></button>' +
+        '<button class="icon-button-ghost" onclick="cancelRenameTag(\'' + t.name.replace(/'/g,"\\'") + '\')" title="Cancel"><i data-lucide="x"></i></button>' +
       '</span>' +
     '</div>';
   }).join('');
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function startRenameTag(name) {
@@ -667,8 +668,8 @@ function renderUsersList() {
         '<span class="badge badge-role badge-role-' + p.role + '" style="margin-left:6px">' + roleLbl + '</span>' +
         (isSelf ? '<span style="font-size:10px;color:var(--text-subtle);margin-left:4px">(you)</span>' : '') +
         '<span class="manage-spacer"></span>' +
-        '<button class="icon-button" onclick="startEditUser(\'' + p.id + '\')" title="Edit">✏️</button>' +
-        (!isSelf ? '<button class="icon-button manage-delete-btn" onclick="deleteUser(\'' + p.id + '\')" title="Remove">🗑️</button>' : '') +
+        '<button class="icon-button-ghost" onclick="startEditUser(\'' + p.id + '\')" title="Edit"><i data-lucide="pencil"></i></button>' +
+        (!isSelf ? '<button class="icon-button-ghost icon-button-ghost-danger" onclick="deleteUser(\'' + p.id + '\')" title="Remove"><i data-lucide="trash-2"></i></button>' : '') +
       '</span>' +
       '<span class="manage-user-edit" id="uedit-' + p.id + '" style="display:none">' +
         '<input class="manage-input" id="uname-' + p.id + '" value="' + p.username.replace(/"/g,'&quot;') + '" style="flex:2"/>' +
@@ -677,11 +678,12 @@ function renderUsersList() {
           '<option value="archiver"' + (p.role === 'archiver' ? ' selected' : '') + '>' + i('roleArchiver') + '</option>' +
         '</select>' +
         '<span class="manage-warn" id="uwarn-' + p.id + '" style="display:none;color:#c0392b"></span>' +
-        '<button class="icon-button" onclick="saveEditUser(\'' + p.id + '\')" title="Confirm">✔️</button>' +
-        '<button class="icon-button" onclick="cancelEditUser(\'' + p.id + '\')" title="Cancel">✕</button>' +
+        '<button class="icon-button-ghost" onclick="saveEditUser(\'' + p.id + '\')" title="Confirm"><i data-lucide="check"></i></button>' +
+        '<button class="icon-button-ghost" onclick="cancelEditUser(\'' + p.id + '\')" title="Cancel"><i data-lucide="x"></i></button>' +
       '</span>' +
     '</div>';
   }).join('');
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function startEditUser(userId) {

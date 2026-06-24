@@ -1,6 +1,23 @@
 'use strict';
 
 // ── ECB Config ────────────────────────────────────────────
+// Each ECB tracks an ordered "selection order" array separately from the
+// underlying filter array, so the input can display "first clicked + N more"
+// in click order rather than the filter array's storage order.
+
+const ECB_SELECTION_ORDER = {
+  version: [], country: [], tags: [], blacklist: [], fanLang: [],
+};
+
+function recordEcbSelection(name, value, isSelected) {
+  var order = ECB_SELECTION_ORDER[name];
+  var idx   = order.indexOf(value);
+  if (isSelected) {
+    if (idx === -1) order.push(value);
+  } else if (idx !== -1) {
+    order.splice(idx, 1);
+  }
+}
 
 const ECB_CONFIG = {
   version: {
@@ -34,7 +51,7 @@ const ECB_CONFIG = {
     phKey:    'blacklistph',
   },
   fanLang: {
-    options:  function() { return FAN_LANGUAGES.map(function(l) { return { value: l, label: l }; }); },
+    options:  function() { return getFanLangsInUse().map(function(l) { return { value: l, label: l }; }); },
     selected: function() { return S.filters.fanLangs; },
     toggleFn: 'toggleFanLang',
     phKey:    'filterfanlangs',
@@ -57,10 +74,50 @@ function renderEcbDropdown(name, query) {
   dd.classList.toggle('open', S.openDropdown === 'ecb-' + name + '-dropdown');
 }
 
+// Renders the ECB input's display state: shows the first-clicked selection
+// as inline text plus a separate "N+" pill for additional selections,
+// rather than leaving the input visually empty while a filter is active.
+function renderEcbInputDisplay(name) {
+  var cfg = ECB_CONFIG[name];
+  if (!cfg) return;
+  var wrapper = document.getElementById('ecb-' + name);
+  if (!wrapper) return;
+  var input    = document.getElementById('ecb-' + name + '-input');
+  var moreEl   = wrapper.querySelector('.ecb-more-pill');
+  var order    = ECB_SELECTION_ORDER[name];
+  var selected = cfg.selected();
+
+  // Selection order may contain stale entries (e.g. cleared via "Clear group") — keep only current selection.
+  var validOrder = order.filter(function(v) { return selected.indexOf(v) !== -1; });
+
+  if (!validOrder.length) {
+    if (input) input.value = '';
+    if (moreEl) moreEl.remove();
+    return;
+  }
+
+  var firstValue = validOrder[0];
+  var match      = cfg.options().find(function(o) { return o.value === firstValue; });
+  if (input) input.value = match ? match.label : firstValue;
+
+  var extraCount = validOrder.length - 1;
+  if (extraCount > 0) {
+    if (!moreEl) {
+      moreEl = document.createElement('span');
+      moreEl.className = 'ecb-more-pill';
+      wrapper.appendChild(moreEl);
+    }
+    moreEl.textContent = '+' + extraCount;
+  } else if (moreEl) {
+    moreEl.remove();
+  }
+}
+
 function renderAllEcbDropdowns() {
   Object.keys(ECB_CONFIG).forEach(function(name) {
     var input = document.getElementById('ecb-' + name + '-input');
-    renderEcbDropdown(name, input ? input.value : '');
+    renderEcbDropdown(name, input ? '' : '');
+    renderEcbInputDisplay(name);
   });
 }
 
@@ -96,9 +153,11 @@ function renderAll() {
   }
   refreshOpenModal();
 
-  // Settings modal re-renders every cycle if open, so role/profile changes reflect live
   var settingsModal = document.getElementById('settings-modal');
   if (settingsModal && settingsModal.classList.contains('open')) renderSettingsPage();
+
+  // Lucide re-scans the DOM for any <i data-lucide="..."> tags introduced by the render above.
+  if (window.lucide) window.lucide.createIcons();
 }
 
 // ── i18n ──────────────────────────────────────────────────
@@ -114,7 +173,10 @@ function syncI18n() {
   });
 
   var colBtn = document.getElementById('columns-button');
-  if (colBtn) colBtn.textContent = i('cols') + ' ▾';
+  if (colBtn) {
+    var colBtnLabel = colBtn.querySelector('.button-label');
+    if (colBtnLabel) colBtnLabel.textContent = i('cols');
+  }
 
   var verSel = document.getElementById('edit-game-version');
   if (verSel) verSel.innerHTML = VERSIONS.map(function(v) {
@@ -130,7 +192,10 @@ function syncI18n() {
   if (langSel) langSel.value = S.lang;
 
   var themeBtn = document.getElementById('theme-toggle-button');
-  if (themeBtn) themeBtn.textContent = S.theme === 'light' ? '☀️' : '🌙';
+  if (themeBtn) {
+    var themeIcon = themeBtn.querySelector('i');
+    if (themeIcon) themeIcon.setAttribute('data-lucide', S.theme === 'light' ? 'sun' : 'moon');
+  }
 
   document.getElementById('view-compact').classList.toggle('on', S.view === 'compact');
   document.getElementById('view-cards').classList.toggle('on',   S.view === 'cards');
@@ -151,25 +216,25 @@ function renderSettingsPage() {
         '<div class="settings-lang-row">' +
           '<label class="settings-lang-label">' + i('language') + '</label>' +
           '<select id="lang-select" class="lang-select" onchange="setLang(this.value)">' +
-            '<option value="en"' + (S.lang === 'en' ? ' selected' : '') + '>🇺🇸 EN-US</option>' +
-            '<option value="pt"' + (S.lang === 'pt' ? ' selected' : '') + '>🇧🇷 PT-BR</option>' +
+            '<option value="en"' + (S.lang === 'en' ? ' selected' : '') + '>EN-US</option>' +
+            '<option value="pt"' + (S.lang === 'pt' ? ' selected' : '') + '>PT-BR</option>' +
           '</select>' +
         '</div>' +
         '<hr class="field-divider"/>' +
         '<p class="settings-intro">' + i('settingsunderconstruction') + '</p>' +
-        '<button class="button-primary" onclick="openModal(\'login-modal\')">' + i('adminlogin') + '</button>' +
+        '<button class="button-base button-base-md button-primary" onclick="openModal(\'login-modal\')">' + i('adminlogin') + '</button>' +
       '</div>';
     return;
   }
 
-  var roleLbl      = roleLabel(S.profile.role);
+  var roleLbl       = roleLabel(S.profile.role);
   var archiverTools = isArchiver()
     ? '<hr class="field-divider"/>' +
       '<div class="settings-tools">' +
-        '<button class="button-base" onclick="openManageVersions()">' + i('managever')  + '</button>' +
-        '<button class="button-base" onclick="openManageTags()">'     + i('managetags') + '</button>' +
-        '<button class="button-base" onclick="openManageUsers()">'    + i('manageusers') + '</button>' +
-        '<button class="button-base" onclick="migrateOrphanGames()">' + i('migrateorphans') + '</button>' +
+        '<button class="button-base button-base-md" onclick="openManageVersions()">' + i('managever')  + '</button>' +
+        '<button class="button-base button-base-md" onclick="openManageTags()">'     + i('managetags') + '</button>' +
+        '<button class="button-base button-base-md" onclick="openManageUsers()">'    + i('manageusers') + '</button>' +
+        '<button class="button-base button-base-md" onclick="migrateOrphanGames()">' + i('migrateorphans') + '</button>' +
       '</div>' +
       '<p class="settings-note" id="migrate-orphans-result"></p>'
     : '';
@@ -182,13 +247,13 @@ function renderSettingsPage() {
     '<div class="settings-lang-row">' +
       '<label class="settings-lang-label">' + i('language') + '</label>' +
       '<select id="lang-select" class="lang-select" onchange="setLang(this.value)">' +
-        '<option value="en"' + (S.lang === 'en' ? ' selected' : '') + '>🇺🇸 EN-US</option>' +
-        '<option value="pt"' + (S.lang === 'pt' ? ' selected' : '') + '>🇧🇷 PT-BR</option>' +
+        '<option value="en"' + (S.lang === 'en' ? ' selected' : '') + '>EN-US</option>' +
+        '<option value="pt"' + (S.lang === 'pt' ? ' selected' : '') + '>PT-BR</option>' +
       '</select>' +
     '</div>' +
     '<div class="settings-actions">' +
-      '<button class="button-base" onclick="triggerPasswordReset()">' + i('changepassword') + '</button>' +
-      '<button class="button-base" onclick="doLogout()">' + i('logout') + '</button>' +
+      '<button class="button-base button-base-md" onclick="triggerPasswordReset()">' + i('changepassword') + '</button>' +
+      '<button class="button-base button-base-md" onclick="doLogout()">' + i('logout') + '</button>' +
     '</div>' +
     archiverTools;
 }
@@ -240,8 +305,9 @@ function renderAdvancedSearch() {
 
   panel.classList.toggle('open', S.advancedOpen);
 
-  var count = activeFilterCount();
-  btn.textContent = count > 0 ? i('advsearch') + ' · ' + count : i('advsearch');
+  var count     = activeFilterCount();
+  var btnLabel  = btn.querySelector('.button-label');
+  if (btnLabel) btnLabel.textContent = count > 0 ? i('advsearch') + ' · ' + count : i('advsearch');
   btn.classList.toggle('on', S.advancedOpen || count > 0);
 
   if (!S.advancedOpen) return;
@@ -253,13 +319,20 @@ function renderAdvancedSearch() {
     if (wrapper) wrapper.style.display = (inCards || S.cols[colKey]) ? '' : 'none';
   });
 
-  var modeOr  = document.getElementById('adv-mode-or');
-  var modeAnd = document.getElementById('adv-mode-and');
-  if (modeOr)  modeOr.classList.toggle('on',  S.filters.tagMode === 'or');
-  if (modeAnd) modeAnd.classList.toggle('on', S.filters.tagMode === 'and');
+  var mustAllCheckbox = document.getElementById('adv-must-have-all');
+  if (mustAllCheckbox) mustAllCheckbox.checked = S.filters.tagModeAll;
 
   renderAllEcbDropdowns();
   renderAdvancedChips();
+}
+
+// Chips render in two groups (Selected / Blacklisted). Each group gets a
+// "Clear group" pill appended at the end, shown only on hover via CSS,
+// and only when the group has 2+ entries.
+function renderChipGroup(chips, clearOnclick) {
+  if (!chips.length) return '';
+  var clearPill = chips.length >= 2 ? makeClearGroupChip(clearOnclick) : '';
+  return chips.join('') + clearPill;
 }
 
 function renderAdvancedChips() {
@@ -288,11 +361,12 @@ function renderAdvancedChips() {
     row.innerHTML = ''; row.style.display = 'none'; return;
   }
 
-  var selLabel   = hasBlacklist ? '<span class="chips-section-label">' + i('selectedtags') + '</span>' : '';
-  var blkLabel   = hasBlacklist ? '<span class="chips-section-label chips-section-label-blacklist">' + i('blacklistedtags') + '</span>' : '';
+  var selLabel = hasBlacklist ? '<span class="chips-section-label">' + i('selectedtags') + '</span>' : '';
+  var blkLabel = hasBlacklist ? '<span class="chips-section-label chips-section-label-blacklist">' + i('blacklistedtags') + '</span>' : '';
 
-  row.innerHTML  = (selectedChips.length  ? selLabel + selectedChips.join('')  : '') +
-                   (blacklistChips.length ? blkLabel + blacklistChips.join('') : '');
+  row.innerHTML =
+    (selectedChips.length  ? '<div class="chip-group">' + selLabel + renderChipGroup(selectedChips, 'clearSelectedTagsGroup()') + '</div>'  : '') +
+    (blacklistChips.length ? '<div class="chip-group">' + blkLabel + renderChipGroup(blacklistChips, 'clearBlacklistGroup()') + '</div>' : '');
   row.style.display = 'flex';
 }
 
@@ -312,7 +386,7 @@ function renderDevPanel() {
   panel.innerHTML =
     '<div class="dev-panel-header">' +
       '<div class="dev-panel-name">' + S.activeDev + '</div>' +
-      '<button class="advanced-panel-close" onclick="S.activeDev=null;renderAll()">✕</button>' +
+      '<button class="icon-button-ghost" onclick="S.activeDev=null;renderAll()"><i data-lucide="x"></i></button>' +
     '</div>' +
     '<div class="dev-panel-country">' + (countries.map(countryWithFlag).join(' · ') || '—') + '</div>' +
     '<div class="dev-panel-badges badge-wrapper">' +
@@ -386,11 +460,11 @@ function renderTableHeaders() {
   document.getElementById('table-header-row').innerHTML = cols.map(function(c) {
     var sortable = c.cls.indexOf('sortable') !== -1;
     var active   = S.sort.col === c.id;
-    var arrow    = (active && S.sort.dir === 'asc') ? '↓' : '↑';
     var sortCls  = active ? (S.sort.dir === 'asc' ? 'sort-asc' : 'sort-desc') : '';
+    var arrowIcon = (active && S.sort.dir === 'asc') ? 'arrow-down' : 'arrow-up';
     return '<th class="' + c.cls + ' ' + sortCls + '" ' +
            (sortable ? 'onclick="sortBy(\'' + c.id + '\')"' : '') + '>' +
-           c.label + (sortable ? '<span class="sort-indicator">' + arrow + '</span>' : '') +
+           c.label + (sortable ? '<i class="sort-indicator" data-lucide="' + arrowIcon + '"></i>' : '') +
            '</th>';
   }).join('');
 }
@@ -399,21 +473,22 @@ function gameRow(g) {
   var fanDevVisible = S.cols.fanDev && S.cols.fanLang;
   var verName       = (function() { var v = VERSIONS.find(function(v) { return v.id === g.vId; }); return v ? v.name : ''; })();
   var esc           = function(s) { return (s || '').replace(/"/g, '&quot;'); };
+  var titleIcon     = g.fanLang ? '<i data-lucide="languages" class="title-fan-icon"></i> ' : '';
   return '<tr' +
     ' data-ss="' + (g.ss || '') + '"' +
     ' data-title="' + esc(g.title) + '"' +
     ' onclick="openGameModal(\'' + g.id + '\')"' +
     ' onmouseenter="showTooltip(event,this)"' +
     ' onmouseleave="hideTooltip()">' +
-    '<td class="col-title">' + (g.fanLang ? '🌐 ' : '') + g.title + '</td>' +
+    '<td class="col-title">' + titleIcon + g.title + '</td>' +
     (S.cols.developer ? '<td class="col-developer">' + devLinks(g.developer) + '</td>' : '') +
     (S.cols.country   ? '<td class="col-country"><span class="col-search-link" data-search="' + esc(g.country) + '" onclick="event.stopPropagation();toggleCountry(this.dataset.search)">' + countryWithFlag(g.country) + '</span></td>' : '') +
     (S.cols.year      ? '<td class="col-year"><span class="col-search-link" data-search="' + g.year + '" onclick="event.stopPropagation();toggleYear(parseInt(this.dataset.search,10))">' + g.year + '</span></td>' : '') +
     (S.cols.version   ? '<td class="col-version"><span class="col-search-link" data-search="' + g.vId + '" onclick="event.stopPropagation();toggleVersion(this.dataset.search)">' + verName + '</span></td>' : '') +
     (S.cols.tags      ? '<td class="col-tags"><div class="badge-wrapper">' + g.tags.map(tagBadge).join('') + '</div></td>' : '') +
-    (S.cols.fanLang   ? '<td class="col-fan-lang">' + (g.fanLang || '—') + '</td>' : '') +
-    (fanDevVisible    ? '<td class="col-fan-dev">'  + (g.fanDev  || '—') + '</td>' : '') +
-    '<td class="col-download"><div class="badge-wrapper">' + downloadBadge(g, true) + '</div></td>' +
+    (S.cols.fanLang   ? '<td class="col-fan-lang">' + fanLangLink(g) + '</td>' : '') +
+    (fanDevVisible    ? '<td class="col-fan-dev">'  + fanDevLink(g)  + '</td>' : '') +
+    '<td class="col-download"><div class="badge-wrapper">' + downloadBadge(g, 'button-base-sm') + '</div></td>' +
     (S.isAdmin ? '<td><div class="action-buttons">' + adminBtns(g, true) + '</div></td>' : '') +
     '</tr>';
 }
@@ -421,7 +496,7 @@ function gameRow(g) {
 function renderTable(games) {
   document.getElementById('table-body').innerHTML = games.length
     ? games.map(gameRow).join('')
-    : '<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div></td></tr>';
+    : '<tr><td colspan="12"><div class="empty-state"><i data-lucide="search-x"></i><p>Nenhum resultado</p></div></td></tr>';
 }
 
 // ── Cards ─────────────────────────────────────────────────
@@ -435,14 +510,15 @@ function gameCard(g, idx) {
     ? '<span class="badge badge-tag" onclick="event.stopPropagation();openGameModal(\'' + g.id + '\')">' + extra + '+ tags</span>'
     : '';
   var translationRow = g.fanLang
-    ? '<div class="card-translation">🌐 ' + g.fanLang + ' translation by ' + (g.fanDev || '—') + '</div>'
+    ? '<div class="card-translation"><i data-lucide="languages"></i> ' + g.fanLang + ' translation by ' + (g.fanDev || '—') + '</div>'
     : '';
+  var titleIcon = g.fanLang ? '<i data-lucide="languages" class="title-fan-icon"></i> ' : '';
 
   return '<div class="card" style="animation-delay:' + Math.min(idx * 25, 200) + 'ms" onclick="openGameModal(\'' + g.id + '\')">' +
     ss +
     '<div class="card-screenshot-fallback" style="' + (g.ss ? 'display:none' : 'display:flex') + '" data-i18n="noss"></div>' +
     '<div class="card-body">' +
-      '<div class="card-title">' + (g.fanLang ? '🌐 ' : '') + g.title + '</div>' +
+      '<div class="card-title">' + titleIcon + g.title + '</div>' +
       '<div class="card-developer">' +
         '<div class="card-dev-name">' + devLinks(g.developer) + '</div>' +
         '<span class="card-dev-meta"> · ' + g.year + ' · ' + countryWithFlag(g.country) + '</span>' +
@@ -452,7 +528,7 @@ function gameCard(g, idx) {
     '</div>' +
     '<div class="card-footer">' +
       '<div></div>' +
-      '<div class="card-footer-right">' + adminBtns(g, true) + downloadBadge(g) + '</div>' +
+      '<div class="card-footer-right">' + adminBtns(g, true) + downloadBadge(g, 'button-base-md') + '</div>' +
     '</div>' +
   '</div>';
 }
@@ -460,12 +536,12 @@ function gameCard(g, idx) {
 function renderCards(games) {
   var addBtn = S.isAdmin
     ? '<div class="card-add-button" onclick="openEdit(null)" role="button" tabindex="0">' +
-        '<div class="card-add-content"><span class="add-icon">\uff0b</span>' +
+        '<div class="card-add-content"><i data-lucide="plus"></i>' +
         '<span class="add-label" data-i18n="addgame"></span></div></div>'
     : '';
   document.getElementById('cards-grid').innerHTML = addBtn +
     (games.length ? games.map(gameCard).join('') :
-      '<div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado</p></div>');
+      '<div class="empty-state"><i data-lucide="search-x"></i><p>Nenhum resultado</p></div>');
 }
 
 // ── Game Detail Modal ─────────────────────────────────────
@@ -481,7 +557,10 @@ function openGameModal(gameId) {
   else       { ssImg.style.display = 'none'; ssFb.style.display = 'flex'; ssFb.textContent = i('noss'); }
 
   var titlePill = document.getElementById('game-detail-title');
-  if (titlePill) titlePill.textContent = (g.fanLang ? '🌐 ' : '') + g.title;
+  if (titlePill) {
+    var titleIcon = g.fanLang ? '<i data-lucide="languages"></i> ' : '';
+    titlePill.innerHTML = titleIcon + g.title;
+  }
 
   var idEl = document.getElementById('game-detail-id');
   if (idEl) idEl.textContent = S.isAdmin ? '#' + g.id : '';
@@ -497,13 +576,14 @@ function openGameModal(gameId) {
     responsibleHtml +
     '<div class="game-detail-footer-right">' +
       (S.isAdmin && canEditGame(g)
-        ? '<button class="action-button" onclick="closeModal(\'game-detail-modal\');openEdit(\'' + g.id + '\')">✏️</button>' +
-          '<button class="action-button delete-button" onclick="closeModal(\'game-detail-modal\');delGame(\'' + g.id + '\')">🗑️</button>'
+        ? '<button class="icon-button-ghost" onclick="closeModal(\'game-detail-modal\');openEdit(\'' + g.id + '\')"><i data-lucide="pencil"></i></button>' +
+          '<button class="icon-button-ghost icon-button-ghost-danger" onclick="closeModal(\'game-detail-modal\');delGame(\'' + g.id + '\')"><i data-lucide="trash-2"></i></button>'
         : '') +
-      downloadBadge(g) +
+      downloadBadge(g, 'button-base-md') +
     '</div>';
 
   openModal('game-detail-modal');
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function _renderModalMeta(g) {
@@ -522,11 +602,12 @@ function _renderModalMeta(g) {
 
 function _renderModalTags(g) {
   var translationLine = g.fanLang
-    ? '<div class="card-translation">🌐 ' + g.fanLang + ' translation by ' + (g.fanDev || '—') + '</div>'
+    ? '<div class="card-translation"><i data-lucide="languages"></i> ' + g.fanLang + ' translation by ' + (g.fanDev || '—') + '</div>'
     : '';
   document.getElementById('game-detail-tags').innerHTML =
     translationLine +
     '<div class="badge-wrapper">' + versionBadge(g.vId) + g.tags.map(tagBadge).join('') + '</div>';
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function refreshOpenModal() {

@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="css/tokens.css"/>
   <link rel="stylesheet" href="css/style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body>
 
@@ -27,25 +28,31 @@
 <!-- TOP BAR -->
 <header class="topbar">
   <a class="logo" href="#" onclick="return false">
-    <span class="logo-icon">♞</span>
+    <i data-lucide="chess-knight" class="logo-icon"></i>
     <div class="logo-text">
       <span class="logo-title">RPGMINDEX</span>
       <span class="logo-sub" data-i18n="sub"></span>
     </div>
   </a>
   <div class="topbar-right">
-    <button class="icon-button" id="theme-toggle-button" onclick="toggleTheme()" title="Toggle theme">☀️</button>
-    <button class="button-base topbar-nav-btn" id="about-btn"    onclick="openAboutModal()"    data-i18n="aboutus"></button>
-    <button class="icon-button topbar-nav-icon" id="about-icon-btn" onclick="openAboutModal()"    title="About">ℹ️</button>
-    <button class="button-base topbar-nav-btn" id="settings-btn" onclick="openSettingsModal()" data-i18n="settings"></button>
-    <button class="icon-button topbar-nav-icon" id="settings-icon-btn" onclick="openSettingsModal()" title="Settings">⚙️</button>
+    <button class="icon-button-ghost" id="theme-toggle-button" onclick="toggleTheme()" title="Toggle theme">
+      <i data-lucide="sun"></i>
+    </button>
+    <button class="button-base button-base-md topbar-nav-btn" id="about-btn" onclick="openAboutModal()" data-i18n="aboutus"></button>
+    <button class="icon-button-ghost topbar-nav-icon" id="about-icon-btn" onclick="openAboutModal()" title="About">
+      <i data-lucide="info"></i>
+    </button>
+    <button class="button-base button-base-md topbar-nav-btn" id="settings-btn" onclick="openSettingsModal()" data-i18n="settings"></button>
+    <button class="icon-button-ghost topbar-nav-icon" id="settings-icon-btn" onclick="openSettingsModal()" title="Settings">
+      <i data-lucide="settings"></i>
+    </button>
   </div>
 </header>
 
-<!-- ADMIN BAR — shown on every page when admin is logged in -->
+<!-- ADMIN BAR -->
 <div id="admin-bar">
   <span class="admin-bar-left">
-    🔐 <span data-i18n="adminmode"></span>
+    <i data-lucide="shield-check"></i> <span data-i18n="adminmode"></span>
     · <strong id="admin-username-label"></strong>
     · <span id="admin-role-label" class="admin-role-pill"></span>
   </span>
@@ -55,11 +62,11 @@
   </div>
 </div>
 
-<!-- WARNING DIV — visible on any page when pending actions exist -->
+<!-- WARNING DIV -->
 <div id="warning-div" style="display:none">
   <div class="warning-header">
-    <span class="warning-title">⚠️ <span data-i18n="pendingactions"></span></span>
-    <button id="warning-toggle-btn" onclick="toggleWarningExpand()">▾</button>
+    <span class="warning-title"><i data-lucide="alert-triangle"></i> <span data-i18n="pendingactions"></span></span>
+    <button id="warning-toggle-btn" onclick="toggleWarningExpand()"><i data-lucide="chevron-down"></i></button>
   </div>
   <div id="warning-actions-list"></div>
 </div>
@@ -70,10 +77,12 @@
   <div class="control-bar">
     <div class="control-left">
       <div class="search-wrapper">
-        <span class="search-icon">🔍</span>
+        <i data-lucide="search" class="search-icon"></i>
         <input class="search-input" id="search" type="search" data-i18n-ph="search" oninput="onSearch(this.value)">
       </div>
-      <button class="button-base" id="advanced-search-button" onclick="toggleAdvancedSearch()"></button>
+      <button class="button-base button-base-md" id="advanced-search-button" onclick="toggleAdvancedSearch()">
+        <span class="button-label" data-i18n="advsearch"></span>
+      </button>
       <div class="sort-control" id="control-sort-wrapper">
         <span class="sort-prefix" data-i18n="sortby"></span>
         <select id="cards-sort" onchange="onCardSort(this.value)">
@@ -87,22 +96,30 @@
     </div>
     <div class="control-right">
       <div class="columns-wrapper" id="columns-wrapper-el">
-        <button class="button-base" id="columns-button" onclick="toggleColumnsMenu()"></button>
+        <button class="button-base button-base-md" id="columns-button" onclick="toggleColumnsMenu()">
+          <span class="button-label" data-i18n="cols"></span> <i data-lucide="chevron-down"></i>
+        </button>
         <div class="columns-menu" id="columns-menu"></div>
       </div>
       <div class="view-toggle">
-        <button class="on" data-i18n="compact" id="view-compact" onclick="setView('compact')"></button>
-        <button data-i18n="cards"   id="view-cards"   onclick="setView('cards')"></button>
+        <button class="icon-button-ghost on" id="view-compact" onclick="setView('compact')" title="Table">
+          <i data-lucide="table"></i>
+        </button>
+        <button class="icon-button-ghost" id="view-cards" onclick="setView('cards')" title="Cards">
+          <i data-lucide="layout-grid"></i>
+        </button>
       </div>
     </div>
   </div>
 
+  <!-- ADVANCED SEARCH PANEL -->
   <div class="advanced-panel" id="advanced-panel">
     <div class="advanced-panel-header">
       <span class="advanced-panel-title" data-i18n="advsearch"></span>
-      <button class="advanced-panel-close" onclick="tryCloseAdvanced()">✕</button>
+      <button class="icon-button-ghost" onclick="tryCloseAdvanced()"><i data-lucide="x"></i></button>
     </div>
     <div class="advanced-panel-body">
+
       <div class="adv-control" id="ecb-version">
         <div class="ecb-wrapper">
           <input type="text" class="ecb-input" id="ecb-version-input" placeholder="Filter versions…"
@@ -110,6 +127,7 @@
           <div class="ecb-dropdown" id="ecb-version-dropdown"></div>
         </div>
       </div>
+
       <div class="adv-control" id="ecb-country">
         <div class="ecb-wrapper">
           <input type="text" class="ecb-input" id="ecb-country-input" placeholder="Filter countries…"
@@ -117,6 +135,7 @@
           <div class="ecb-dropdown" id="ecb-country-dropdown"></div>
         </div>
       </div>
+
       <div class="adv-control adv-control-tags">
         <div class="adv-tags-row">
           <div class="ecb-wrapper" id="ecb-tags">
@@ -124,13 +143,12 @@
                    oninput="filterAdvancedEcb('tags',this.value)" onfocus="openAdvancedEcb('tags')" autocomplete="off"/>
             <div class="ecb-dropdown" id="ecb-tags-dropdown"></div>
           </div>
-          <div class="mode-toggle">
-            <button id="adv-mode-or"  onclick="setTagMode('or')">OR</button>
-            <button id="adv-mode-and" class="on" onclick="setTagMode('and')">AND</button>
-          </div>
-          <span class="label-pill label-pill-tagsonly" data-i18n="tagsonly"></span>
         </div>
-        <div class="adv-tags-row" style="margin-top:6px">
+        <label class="adv-checkbox-row">
+          <input type="checkbox" id="adv-must-have-all" checked onchange="setTagModeAll(this.checked)"/>
+          <span data-i18n="musthavealltags"></span>
+        </label>
+        <div class="adv-tags-row" style="margin-top:8px">
           <div class="ecb-wrapper" id="ecb-blacklist">
             <input type="text" class="ecb-input ecb-input-blacklist" id="ecb-blacklist-input" placeholder="Exclude tags…"
                    oninput="filterAdvancedEcb('blacklist',this.value)" onfocus="openAdvancedEcb('blacklist')" autocomplete="off"/>
@@ -138,6 +156,7 @@
           </div>
         </div>
       </div>
+
       <div class="adv-control" id="ecb-fanLang">
         <div class="ecb-wrapper">
           <input type="text" class="ecb-input" id="ecb-fanLang-input" placeholder="Filter languages…"
@@ -145,9 +164,7 @@
           <div class="ecb-dropdown" id="ecb-fanLang-dropdown"></div>
         </div>
       </div>
-      <div class="adv-control adv-control-clear">
-        <button class="clear-button" data-i18n="clearall" onclick="clearAdvancedFilters()"></button>
-      </div>
+
     </div>
     <div class="advanced-chips-row" id="advanced-chips-row" style="display:none"></div>
   </div>
@@ -182,12 +199,12 @@
 
 </main>
 
-<!-- ═══════════════════════════════ PAGE: ABOUT ═══════════════════════════════ -->
+<!-- ═══════════════════════════════ MODAL: ABOUT ═══════════════════════════════ -->
 <div class="modal-overlay" id="about-modal">
   <div class="modal-content modal-content-shell">
     <div class="modal-shell-header">
       <span class="modal-shell-title" data-i18n="abouttitle"></span>
-      <button class="modal-shell-close" onclick="closeModal('about-modal')">×</button>
+      <button class="modal-shell-close" onclick="closeModal('about-modal')"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-shell-body about-main">
       <div class="about-text">
@@ -199,7 +216,7 @@
         <div class="field"><input id="contact-name"  type="text"  data-i18n-ph="contactname"/></div>
         <div class="field"><input id="contact-email" type="email" data-i18n-ph="contactemail"/></div>
         <div class="field"><textarea id="contact-message" data-i18n-ph="contactmsg"></textarea></div>
-        <button class="button-primary" data-i18n="contactsend" onclick="sendContact()"></button>
+        <button class="button-base button-base-md button-primary" data-i18n="contactsend" onclick="sendContact()"></button>
       </div>
     </div>
   </div>
@@ -210,26 +227,23 @@
   <div class="modal-content modal-content-shell">
     <div class="modal-shell-header">
       <span class="modal-shell-title" data-i18n="settings"></span>
-      <button class="modal-shell-close" onclick="closeModal('settings-modal')">×</button>
+      <button class="modal-shell-close" onclick="closeModal('settings-modal')"><i data-lucide="x"></i></button>
     </div>
-    <div class="modal-shell-body" id="settings-content">
-      <!-- Rendered by renderSettingsPage() -->
-    </div>
+    <div class="modal-shell-body" id="settings-content"></div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════ TOOLTIP ════════════════════════════════ -->
+<!-- TOOLTIP -->
 <div id="tooltip">
   <img id="tooltip-image" src="" alt=""/>
   <div class="tooltip-fallback" data-i18n="noss" id="tooltip-fallback"></div>
   <div id="tooltip-title"></div>
 </div>
 
-<!-- ══════════════════════════════════ MODALS ═════════════════════════════════ -->
-
+<!-- GAME DETAIL MODAL -->
 <div class="modal-overlay" id="game-detail-modal">
   <div class="modal-content game-detail-content">
-    <button class="game-detail-close" onclick="closeModal('game-detail-modal');S.activeModalGameId=null">×</button>
+    <button class="game-detail-close" onclick="closeModal('game-detail-modal');S.activeModalGameId=null"><i data-lucide="x"></i></button>
     <div class="game-detail-screenshot-wrap">
       <img id="game-detail-screenshot" src="" alt=""/>
       <div id="game-detail-screenshot-fallback"></div>
@@ -271,6 +285,7 @@
   </div>
 </div>
 
+<!-- EDIT / ADD GAME -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal-content large">
     <div class="modal-title" id="edit-modal-title"></div>
@@ -303,22 +318,21 @@
     <div class="field">
       <div class="screenshot-field">
         <input id="edit-screenshot-url" type="url" placeholder="Screenshot URL…" title="Screenshot URL"/>
-        <button type="button" class="button-base" id="screenshot-upload-btn" onclick="triggerScreenshotUpload()"></button>
+        <button type="button" class="button-base button-base-md" id="screenshot-upload-btn" onclick="triggerScreenshotUpload()"></button>
         <input type="file" id="edit-screenshot-file-input" accept="image/*" style="display:none"
                onchange="handleScreenshotFile(this)"/>
       </div>
     </div>
+
+    <!-- Lost Media switch — replaces the old Available/Lost Media radio pair -->
     <div class="field">
-      <div class="download-options">
-        <div class="download-option">
-          <input type="radio" name="download-type" id="download-available"   value="available" onchange="toggleDownloadField()" checked/>
-          <label for="download-available"   data-i18n="avail"></label>
-        </div>
-        <div class="download-option">
-          <input type="radio" name="download-type" id="download-unavailable" value="na"        onchange="toggleDownloadField()"/>
-          <label for="download-unavailable" id="lost-media-label" data-i18n="na2"></label>
-        </div>
-      </div>
+      <label class="lost-media-switch-row" id="lost-media-label">
+        <span class="switch">
+          <input type="checkbox" id="lost-media-switch" onchange="toggleDownloadField()"/>
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+        </span>
+        <span data-i18n="na2"></span>
+      </label>
       <div id="download-available-fields">
         <input id="edit-download-url"  type="url" data-i18n-ph="sourceph"      style="margin-top:6px" title="Source URL"/>
         <div class="login-error" id="edit-source-error"  style="display:none"></div>
@@ -332,6 +346,7 @@
         <div class="login-error" id="edit-lost-archive-error" style="display:none"></div>
       </div>
     </div>
+
     <hr class="field-divider"/>
     <div class="field-row">
       <div class="field">
@@ -351,7 +366,7 @@
           <input type="text" id="edit-tag-input" data-i18n-ph="tagph"
                  oninput="onEditTagInput(this.value)" onkeydown="onEditTagKeydown(event)"
                  onfocus="renderEditTagDropdown(editForm.tagFilter)" autocomplete="off" title="Tags"/>
-          <span class="ms-arrow" onclick="toggleEditTagDropdown()" style="cursor:pointer;padding:0 4px">▾</span>
+          <i data-lucide="chevron-down" class="ms-arrow" onclick="toggleEditTagDropdown()" style="cursor:pointer"></i>
         </div>
         <div class="ecb-dropdown" id="edit-tag-dropdown"></div>
         <div class="edit-tag-chips" id="edit-tag-chips"></div>
@@ -370,7 +385,7 @@
     <div class="modal-title" data-i18n="managever"></div>
     <div class="manage-add-row">
       <input id="new-ver-name" class="manage-input" placeholder="RPG Maker MZ" style="flex:1"/>
-      <button class="button-primary" onclick="addVersion()" data-i18n="addversion"></button>
+      <button class="button-base button-base-md button-primary" onclick="addVersion()" data-i18n="addversion"></button>
     </div>
     <hr class="field-divider"/>
     <div id="versions-list" class="manage-list"></div>
