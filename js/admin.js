@@ -280,11 +280,12 @@ async function saveGame() {
 
   if (!valid) return;
 
-  // Auto-manage protected tags for Lost Media mode
+  // Protected tags are entirely auto-managed: always strip them first,
+  // then re-add the correct one only when the game is actually Lost Media.
+  editForm.tags = editForm.tags.filter(function(t) {
+    return t.name !== 'Lost Media' && t.name !== 'Found Media';
+  });
   if (isLostMedia) {
-    editForm.tags = editForm.tags.filter(function(t) {
-      return t.name !== 'Lost Media' && t.name !== 'Found Media';
-    });
     editForm.tags.push({ name: lostArchiveUrl ? 'Found Media' : 'Lost Media', isNew: false });
   }
 

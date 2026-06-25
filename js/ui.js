@@ -27,7 +27,18 @@ function searchBy(term) {
 
 function openAdvancedEcb(name) {
   S.openDropdown = 'ecb-' + name + '-dropdown';
-  renderEcbDropdown(name, '');
+  Object.keys(ECB_CONFIG).forEach(function(otherName) {
+    if (otherName === name) {
+      var input = document.getElementById('ecb-' + otherName + '-input');
+      if (input) input.value = '';
+      renderEcbDropdown(otherName, '');
+    } else {
+      // Close every other ECB's dropdown and restore its "first selection" display.
+      renderEcbInputDisplay(otherName);
+      var dd = document.getElementById('ecb-' + otherName + '-dropdown');
+      if (dd) dd.classList.remove('open');
+    }
+  });
 }
 
 function filterAdvancedEcb(name, query) {
@@ -72,11 +83,19 @@ function confirmClearClose() {
   renderAll();
 }
 
-// Clears only the "Selected tags" chip group (tags + their selection order),
-// leaving versions/countries/years/fanLangs/blacklist untouched.
+// Clears every filter type shown in the "Selected" chip group — versions,
+// countries, years, tags, and fan languages — since they all render together
+// under one visual group. Blacklist is untouched (separate group).
 function clearSelectedTagsGroup() {
-  S.filters.tags = [];
-  ECB_SELECTION_ORDER.tags = [];
+  S.filters.versions  = [];
+  S.filters.countries = [];
+  S.filters.years     = [];
+  S.filters.tags      = [];
+  S.filters.fanLangs  = [];
+  ECB_SELECTION_ORDER.version = [];
+  ECB_SELECTION_ORDER.country = [];
+  ECB_SELECTION_ORDER.tags    = [];
+  ECB_SELECTION_ORDER.fanLang = [];
   renderAll();
 }
 

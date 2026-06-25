@@ -80,7 +80,7 @@ function renderEcbDropdown(name, query) {
 function renderEcbInputDisplay(name) {
   var cfg = ECB_CONFIG[name];
   if (!cfg) return;
-  var wrapper = document.getElementById('ecb-' + name);
+  var wrapper = document.getElementById('ecb-' + name + '-wrapper');
   if (!wrapper) return;
   var input    = document.getElementById('ecb-' + name + '-input');
   var moreEl   = wrapper.querySelector('.ecb-more-pill');
@@ -192,10 +192,7 @@ function syncI18n() {
   if (langSel) langSel.value = S.lang;
 
   var themeBtn = document.getElementById('theme-toggle-button');
-  if (themeBtn) {
-    var themeIcon = themeBtn.querySelector('i');
-    if (themeIcon) themeIcon.setAttribute('data-lucide', S.theme === 'light' ? 'sun' : 'moon');
-  }
+  if (themeBtn) themeBtn.innerHTML = '<i data-lucide="' + (S.theme === 'light' ? 'sun' : 'moon') + '"></i>';
 
   document.getElementById('view-compact').classList.toggle('on', S.view === 'compact');
   document.getElementById('view-cards').classList.toggle('on',   S.view === 'cards');
@@ -319,9 +316,6 @@ function renderAdvancedSearch() {
     if (wrapper) wrapper.style.display = (inCards || S.cols[colKey]) ? '' : 'none';
   });
 
-  var mustAllCheckbox = document.getElementById('adv-must-have-all');
-  if (mustAllCheckbox) mustAllCheckbox.checked = S.filters.tagModeAll;
-
   renderAllEcbDropdowns();
   renderAdvancedChips();
 }
@@ -364,8 +358,15 @@ function renderAdvancedChips() {
   var selLabel = hasBlacklist ? '<span class="chips-section-label">' + i('selectedtags') + '</span>' : '';
   var blkLabel = hasBlacklist ? '<span class="chips-section-label chips-section-label-blacklist">' + i('blacklistedtags') + '</span>' : '';
 
+  var mustAllRow = S.filters.tags.length > 0
+    ? '<label class="adv-checkbox-row">' +
+        '<input type="checkbox" id="adv-must-have-all" ' + (S.filters.tagModeAll ? 'checked' : '') + ' onchange="setTagModeAll(this.checked)"/>' +
+        '<span>' + i('musthavealltags') + '</span>' +
+      '</label>'
+    : '';
+
   row.innerHTML =
-    (selectedChips.length  ? '<div class="chip-group">' + selLabel + renderChipGroup(selectedChips, 'clearSelectedTagsGroup()') + '</div>'  : '') +
+    (selectedChips.length  ? '<div class="chip-group">' + selLabel + renderChipGroup(selectedChips, 'clearSelectedTagsGroup()') + mustAllRow + '</div>'  : '') +
     (blacklistChips.length ? '<div class="chip-group">' + blkLabel + renderChipGroup(blacklistChips, 'clearBlacklistGroup()') + '</div>' : '');
   row.style.display = 'flex';
 }

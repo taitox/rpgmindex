@@ -121,7 +121,7 @@
     <div class="advanced-panel-body">
 
       <div class="adv-control" id="ecb-version">
-        <div class="ecb-wrapper">
+        <div class="ecb-wrapper" id="ecb-version-wrapper">
           <input type="text" class="ecb-input" id="ecb-version-input" placeholder="Filter versions…"
                  oninput="filterAdvancedEcb('version',this.value)" onfocus="openAdvancedEcb('version')" autocomplete="off"/>
           <div class="ecb-dropdown" id="ecb-version-dropdown"></div>
@@ -129,7 +129,7 @@
       </div>
 
       <div class="adv-control" id="ecb-country">
-        <div class="ecb-wrapper">
+        <div class="ecb-wrapper" id="ecb-country-wrapper">
           <input type="text" class="ecb-input" id="ecb-country-input" placeholder="Filter countries…"
                  oninput="filterAdvancedEcb('country',this.value)" onfocus="openAdvancedEcb('country')" autocomplete="off"/>
           <div class="ecb-dropdown" id="ecb-country-dropdown"></div>
@@ -138,18 +138,14 @@
 
       <div class="adv-control adv-control-tags">
         <div class="adv-tags-row">
-          <div class="ecb-wrapper" id="ecb-tags">
+          <div class="ecb-wrapper" id="ecb-tags-wrapper">
             <input type="text" class="ecb-input" id="ecb-tags-input" placeholder="Filter tags…"
                    oninput="filterAdvancedEcb('tags',this.value)" onfocus="openAdvancedEcb('tags')" autocomplete="off"/>
             <div class="ecb-dropdown" id="ecb-tags-dropdown"></div>
           </div>
         </div>
-        <label class="adv-checkbox-row">
-          <input type="checkbox" id="adv-must-have-all" checked onchange="setTagModeAll(this.checked)"/>
-          <span data-i18n="musthavealltags"></span>
-        </label>
         <div class="adv-tags-row" style="margin-top:8px">
-          <div class="ecb-wrapper" id="ecb-blacklist">
+          <div class="ecb-wrapper" id="ecb-blacklist-wrapper">
             <input type="text" class="ecb-input ecb-input-blacklist" id="ecb-blacklist-input" placeholder="Exclude tags…"
                    oninput="filterAdvancedEcb('blacklist',this.value)" onfocus="openAdvancedEcb('blacklist')" autocomplete="off"/>
             <div class="ecb-dropdown" id="ecb-blacklist-dropdown"></div>
@@ -158,7 +154,7 @@
       </div>
 
       <div class="adv-control" id="ecb-fanLang">
-        <div class="ecb-wrapper">
+        <div class="ecb-wrapper" id="ecb-fanLang-wrapper">
           <input type="text" class="ecb-input" id="ecb-fanLang-input" placeholder="Filter languages…"
                  oninput="filterAdvancedEcb('fanLang',this.value)" onfocus="openAdvancedEcb('fanLang')" autocomplete="off"/>
           <div class="ecb-dropdown" id="ecb-fanLang-dropdown"></div>
@@ -261,34 +257,48 @@
 </div>
 
 <div class="modal-overlay no-click-close" id="confirm-clear-modal">
-  <div class="modal-content">
-    <div class="modal-title"    data-i18n="confirmclear"></div>
-    <div class="modal-subtitle" data-i18n="confirmclearsub"></div>
-    <div class="modal-actions">
-      <button class="button-secondary" data-i18n="confirmkeep"     onclick="keepAndClose()"></button>
-      <button class="button-primary"   data-i18n="confirmclearbtn" onclick="confirmClearClose()"></button>
+  <div class="modal-content modal-content-shell">
+    <div class="modal-shell-header">
+      <span class="modal-shell-title" data-i18n="confirmclear"></span>
+      <button class="modal-shell-close" onclick="keepAndClose()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-shell-body">
+      <div class="modal-subtitle" data-i18n="confirmclearsub"></div>
+      <div class="modal-actions">
+        <button class="button-secondary" data-i18n="confirmkeep"     onclick="keepAndClose()"></button>
+        <button class="button-primary"   data-i18n="confirmclearbtn" onclick="confirmClearClose()"></button>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="login-modal">
-  <div class="modal-content">
-    <div class="modal-title"    data-i18n="adminlogin"></div>
-    <div class="modal-subtitle" data-i18n="adminsub"></div>
-    <div class="field"><input id="login-email"    type="email"    placeholder="admin@example.com" title="Email"/></div>
-    <div class="field"><input id="login-password" type="password" placeholder="Password"          title="Password"/></div>
-    <div class="modal-actions">
-      <button class="button-secondary" data-i18n="cancel" onclick="closeModal('login-modal')"></button>
-      <button class="button-primary"   data-i18n="login"  onclick="doLogin()"></button>
+  <div class="modal-content modal-content-shell">
+    <div class="modal-shell-header">
+      <span class="modal-shell-title" data-i18n="adminlogin"></span>
+      <button class="modal-shell-close" onclick="closeModal('login-modal')"><i data-lucide="x"></i></button>
     </div>
-    <div class="login-error" id="login-error">Credenciais inválidas.</div>
+    <div class="modal-shell-body">
+      <div class="modal-subtitle" data-i18n="adminsub"></div>
+      <div class="field"><input id="login-email"    type="email"    placeholder="admin@example.com" title="Email"/></div>
+      <div class="field"><input id="login-password" type="password" placeholder="Password"          title="Password"/></div>
+      <div class="modal-actions">
+        <button class="button-secondary" data-i18n="cancel" onclick="closeModal('login-modal')"></button>
+        <button class="button-primary"   data-i18n="login"  onclick="doLogin()"></button>
+      </div>
+      <div class="login-error" id="login-error">Credenciais inválidas.</div>
+    </div>
   </div>
 </div>
 
 <!-- EDIT / ADD GAME -->
 <div class="modal-overlay" id="edit-modal">
-  <div class="modal-content large">
-    <div class="modal-title" id="edit-modal-title"></div>
+  <div class="modal-content modal-content-shell" style="max-width:680px">
+    <div class="modal-shell-header">
+      <span class="modal-shell-title" id="edit-modal-title"></span>
+      <button class="modal-shell-close" onclick="closeModal('edit-modal')"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-shell-body">
     <input type="hidden" id="edit-game-id"/>
     <div class="field-row">
       <div class="field">
@@ -331,7 +341,7 @@
           <input type="checkbox" id="lost-media-switch" onchange="toggleDownloadField()"/>
           <span class="switch-track"><span class="switch-thumb"></span></span>
         </span>
-        <span data-i18n="na2"></span>
+        <span class="lost-media-text" data-i18n="na2"></span>
       </label>
       <div id="download-available-fields">
         <input id="edit-download-url"  type="url" data-i18n-ph="sourceph"      style="margin-top:6px" title="Source URL"/>
@@ -377,46 +387,62 @@
       <button class="button-secondary" data-i18n="cancel" onclick="closeModal('edit-modal')"></button>
       <button class="button-primary"   data-i18n="save"   onclick="saveGame()"></button>
     </div>
+    </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="manage-versions-modal">
-  <div class="modal-content large">
-    <div class="modal-title" data-i18n="managever"></div>
-    <div class="manage-add-row">
-      <input id="new-ver-name" class="manage-input" placeholder="RPG Maker MZ" style="flex:1"/>
-      <button class="button-base button-base-md button-primary" onclick="addVersion()" data-i18n="addversion"></button>
+  <div class="modal-content modal-content-shell">
+    <div class="modal-shell-header">
+      <span class="modal-shell-title" data-i18n="managever"></span>
+      <button class="modal-shell-close" onclick="closeModal('manage-versions-modal')"><i data-lucide="x"></i></button>
     </div>
-    <hr class="field-divider"/>
-    <div id="versions-list" class="manage-list"></div>
-    <div class="modal-actions">
-      <button class="button-secondary" data-i18n="cancel" onclick="closeModal('manage-versions-modal')"></button>
+    <div class="modal-shell-body">
+      <div class="manage-add-row">
+        <input id="new-ver-name" class="manage-input" placeholder="RPG Maker MZ" style="flex:1"/>
+        <button class="button-base button-base-md button-primary" onclick="addVersion()" data-i18n="addversion"></button>
+      </div>
+      <hr class="field-divider"/>
+      <div id="versions-list" class="manage-list"></div>
+      <div class="modal-actions">
+        <button class="button-secondary" data-i18n="cancel" onclick="closeModal('manage-versions-modal')"></button>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="manage-tags-modal">
-  <div class="modal-content large">
-    <div class="modal-title" data-i18n="managetags"></div>
-    <input class="manage-input" style="width:100%;margin-bottom:8px"
-           data-i18n-ph="filtertagsmanager" oninput="filterTagsList(this.value)"/>
-    <hr class="field-divider"/>
-    <div id="tags-list" class="manage-list"></div>
-    <div class="modal-actions">
-      <button class="button-secondary" data-i18n="cancel" onclick="closeModal('manage-tags-modal')"></button>
+  <div class="modal-content modal-content-shell">
+    <div class="modal-shell-header">
+      <span class="modal-shell-title" data-i18n="managetags"></span>
+      <button class="modal-shell-close" onclick="closeModal('manage-tags-modal')"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-shell-body">
+      <input class="manage-input" style="width:100%;margin-bottom:8px"
+             data-i18n-ph="filtertagsmanager" oninput="filterTagsList(this.value)"/>
+      <hr class="field-divider"/>
+      <div id="tags-list" class="manage-list"></div>
+      <div class="modal-actions">
+        <button class="button-secondary" data-i18n="cancel" onclick="closeModal('manage-tags-modal')"></button>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="manage-users-modal">
-  <div class="modal-content large">
-    <div class="modal-title" data-i18n="manageusers"></div>
-    <input class="manage-input" style="width:100%;margin-bottom:8px"
-           placeholder="Filter users…" oninput="filterUsersList(this.value)"/>
-    <hr class="field-divider"/>
-    <div id="users-list" class="manage-list"></div>
-    <div class="modal-actions">
-      <button class="button-secondary" data-i18n="cancel" onclick="closeModal('manage-users-modal')"></button>
+  <div class="modal-content modal-content-shell">
+    <div class="modal-shell-header">
+      <span class="modal-shell-title" data-i18n="manageusers"></span>
+      <button class="modal-shell-close" onclick="closeModal('manage-users-modal')"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-shell-body">
+      <input class="manage-input" style="width:100%;margin-bottom:8px"
+             placeholder="Filter users…" oninput="filterUsersList(this.value)"/>
+      <hr class="field-divider"/>
+      <div id="users-list" class="manage-list"></div>
+      <div class="modal-actions">
+        <button class="button-secondary" data-i18n="cancel" onclick="closeModal('manage-users-modal')"></button>
+      </div>
     </div>
   </div>
 </div>
